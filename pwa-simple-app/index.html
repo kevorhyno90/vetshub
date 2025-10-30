@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="src/styles.css">
+    <title>PWA Simple App</title>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="brand">
+            <div class="logo">VB</div>
+            <div class="title">Vetshub</div>
+        </div>
+        <div class="header-actions">
+            <button id="export-btn" class="btn secondary">Export data</button>
+            <label for="import-file" class="btn secondary">Import</label>
+            <input id="import-file" type="file" accept="application/json" style="display:none" />
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar nav">
+            <button data-section="dashboard" class="active">Dashboard</button>
+            <button data-section="crop">Crops</button>
+            <button data-section="livestock">Livestock</button>
+            <button data-section="inventory">Inventory</button>
+            <button data-section="tasks">Tasks</button>
+            <button data-section="finance">Finance</button>
+            <button data-section="fields">Fields</button>
+            <button data-section="activities">Activities</button>
+            <button data-section="equipment">Equipment</button>
+            <button data-section="contacts">Contacts</button>
+            <button data-section="orders">Orders</button>
+            <button data-section="animals">Animals</button>
+            <button data-section="attachments">Attachments</button>
+            <button data-section="reports">Reports</button>
+        </aside>
+
+    <main>
+        <section id="dashboard" class="section active">
+            <h2>Overview</h2>
+            <div id="overview-area">Loading overview...</div>
+        </section>
+
+        <section id="crop" class="section">
+            <h2>Crop Management</h2>
+            <form id="crop-form" class="item-form">
+                <input type="text" id="crop-name" placeholder="Crop name (e.g., Corn)" required />
+                <input type="text" id="crop-field" placeholder="Field / Plot" />
+                <input type="date" id="crop-planting" placeholder="Planting date" />
+                <button type="submit">Add Crop</button>
+            </form>
+            <div id="crop-list" class="item-list">No crops yet.</div>
+        </section>
+
+        <section id="livestock" class="section">
+            <h2>Livestock</h2>
+            <form id="livestock-form" class="item-form">
+                <input type="text" id="animal-id" placeholder="Animal ID / Tag" required />
+                <input type="text" id="animal-type" placeholder="Type (e.g., Cow)" />
+                <input type="text" id="animal-breed" placeholder="Breed" />
+                <button type="submit">Add Animal</button>
+            </form>
+            <div id="livestock-list" class="item-list">No animals yet.</div>
+        </section>
+
+        <section id="inventory" class="section">
+            <h2>Inventory</h2>
+            <form id="inventory-form" class="item-form">
+                <input type="text" id="inv-name" placeholder="Item name (Feed, Seed, Fuel)" required />
+                <input type="number" id="inv-qty" placeholder="Quantity" step="any" />
+                <input type="text" id="inv-unit" placeholder="Unit (kg, L, units)" />
+                <button type="submit">Add Inventory</button>
+            </form>
+            <div id="inventory-list" class="item-list">No inventory yet.</div>
+        </section>
+
+        <section id="fields" class="section">
+            <h2>Fields & Boundaries</h2>
+            <form id="field-form" class="item-form">
+                <input type="text" id="field-name" placeholder="Field name" required />
+                <textarea id="field-geojson" placeholder='Paste GeoJSON Polygon here (or leave blank)'></textarea>
+                <button type="submit">Add Field</button>
+            </form>
+            <div id="fields-list" class="item-list">No fields yet.</div>
+        </section>
+
+        <section id="activities" class="section">
+            <h2>Field Activities</h2>
+            <form id="activity-form" class="item-form">
+                <input type="text" id="act-type" placeholder="Activity type (weeding, harvest)" required />
+                <input type="date" id="act-date" />
+                <input type="text" id="act-field" placeholder="Field ID" />
+                <input type="text" id="act-crop" placeholder="Crop ID" />
+                <input type="text" id="act-worker" placeholder="Worker" />
+                <input type="number" id="act-cost" placeholder="Cost" step="0.01" />
+                <button type="button" id="geo-capture">Capture Location</button>
+                <input type="hidden" id="act-lat" />
+                <input type="hidden" id="act-lng" />
+                <button type="submit">Add Activity</button>
+            </form>
+            <div id="activities-list" class="item-list">No activities yet.</div>
+        </section>
+
+        <section id="equipment" class="section">
+            <h2>Equipment & Maintenance</h2>
+            <form id="equipment-form" class="item-form">
+                <input type="text" id="equip-name" placeholder="Equipment name" required />
+                <input type="text" id="equip-type" placeholder="Type (tractor, harvester)" />
+                <input type="date" id="equip-purchase" />
+                <button type="submit">Add Equipment</button>
+            </form>
+            <div id="equipment-list" class="item-list">No equipment yet.</div>
+        </section>
+
+        <section id="contacts" class="section">
+            <h2>Contacts & Vendors</h2>
+            <form id="contact-form" class="item-form">
+                <input type="text" id="contact-name" placeholder="Name / Vendor" required />
+                <input type="text" id="contact-type" placeholder="Type (vendor, buyer)" />
+                <input type="text" id="contact-phone" placeholder="Phone" />
+                <button type="submit">Add Contact</button>
+            </form>
+            <div id="contacts-list" class="item-list">No contacts yet.</div>
+        </section>
+
+        <section id="orders" class="section">
+            <h2>Orders & Sales</h2>
+            <form id="order-form" class="item-form">
+                <input type="text" id="order-desc" placeholder="Order description" required />
+                <input type="number" id="order-amount" placeholder="Amount" step="0.01" />
+                <input type="date" id="order-date" />
+                <button type="submit">Add Order</button>
+            </form>
+            <div id="orders-list" class="item-list">No orders yet.</div>
+        </section>
+
+        <section id="animals" class="section">
+            <h2>Animals & Breeding</h2>
+            <form id="animal-form" class="item-form">
+                <input type="text" id="animal-tag" placeholder="Tag / ID" required />
+                <input type="text" id="animal-species" placeholder="Species" />
+                <input type="date" id="animal-dob" />
+                <input type="text" id="animal-parents" placeholder="Parent IDs (comma)" />
+                <button type="submit">Add Animal</button>
+            </form>
+            <div id="animals-list" class="item-list">No animals yet.</div>
+        </section>
+
+        <section id="attachments" class="section">
+            <h2>Attachments (photos, files)</h2>
+            <form id="attachment-form" class="item-form">
+                <input type="file" id="attachment-file" />
+                <input type="text" id="attachment-desc" placeholder="Description / link to record id" />
+                <button type="submit">Upload</button>
+            </form>
+            <div id="attachments-list" class="item-list">No attachments yet.</div>
+        </section>
+
+        <section id="reports" class="section">
+            <h2>Reports & Analytics</h2>
+            <div id="reports-area">Use Export to back up data. Basic reports:</div>
+            <div id="report-production"></div>
+            <div id="report-finance"></div>
+        </section>
+
+        <section id="tasks" class="section">
+            <h2>Tasks & Scheduling</h2>
+            <form id="task-form" class="item-form">
+                <input type="text" id="task-title" placeholder="Task title" required />
+                <input type="date" id="task-date" />
+                <input type="text" id="task-assignee" placeholder="Assign to" />
+                <button type="submit">Add Task</button>
+            </form>
+            <div id="task-list" class="item-list">No tasks yet.</div>
+        </section>
+
+        <section id="finance" class="section">
+            <h2>Finance (Income & Expenses)</h2>
+            <form id="finance-form" class="item-form">
+                <input type="text" id="fin-desc" placeholder="Description (Sale, Seed purchase)" required />
+                <input type="number" id="fin-amount" placeholder="Amount (positive income, negative expense)" step="0.01" required />
+                <select id="fin-type">
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+                <button type="submit">Add Record</button>
+            </form>
+            <div id="finance-list" class="item-list">No finance records yet.</div>
+            <div id="finance-summary" class="summary">Summary: —</div>
+        </section>
+    </main>
+
+    <footer>
+        <small>Vetshub — local-only PWA for farm management (data stored in your browser)</small>
+    </footer>
+
+    </div> <!-- .layout -->
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
