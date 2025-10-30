@@ -44,10 +44,10 @@ python3 -m http.server 8080
 ### Browser Support
 
 The PWA works in all modern browsers that support Service Workers:
-- Chrome/Edge 40+
-- Firefox 44+
-- Safari 11.1+
-- Opera 27+
+- Chrome/Edge 67+
+- Firefox 60+
+- Safari 12+
+- Opera 54+
 
 ### Technologies Used
 
