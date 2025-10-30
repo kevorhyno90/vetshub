@@ -155,6 +155,15 @@ Run tests with coverage:
 pytest --cov=vetshub tests/
 ```
 
+## Security
+
+The system follows security best practices:
+- Debug mode is disabled by default in production
+- Set `FLASK_DEBUG=true` environment variable only in development
+- All dependencies are kept up-to-date with security patches
+- Werkzeug 3.0.3+ is used to patch remote execution vulnerabilities
+- Database queries use parameterized statements via SQLAlchemy ORM
+
 ## Configuration
 
 The system can be configured through environment variables:
