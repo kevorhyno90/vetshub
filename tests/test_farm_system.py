@@ -116,7 +116,7 @@ class TestLivestockModel(unittest.TestCase):
             species="pig",
             breed="Yorkshire",
             tag_id="P-001",
-            birth_date=datetime(2025, 1, 1),
+            birth_date=datetime(2024, 1, 1),
             gender="male"
         )
         pig.add_vaccination(datetime.now(), "Swine Flu Vaccine", datetime.now() + timedelta(days=365))
@@ -129,7 +129,7 @@ class TestLivestockModel(unittest.TestCase):
             species="chicken",
             breed="Leghorn",
             tag_id="C-001",
-            birth_date=datetime(2025, 1, 1),
+            birth_date=datetime(2024, 1, 1),
             gender="female"
         )
         chicken.record_production(datetime.now(), "eggs", 10, "count")

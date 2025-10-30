@@ -80,7 +80,7 @@ def demo_comprehensive_farm_system():
         species="chicken",
         breed="Rhode Island Red",
         tag_id="C-001",
-        birth_date=datetime(2025, 1, 10),
+        birth_date=datetime(2024, 1, 10),
         gender="female"
     )
     chicken1.purchase_price = 25.0
