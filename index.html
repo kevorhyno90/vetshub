@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Vetshub - A comprehensive farm management system">
+    <meta name="theme-color" content="#2E7D32">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    
+    <title>Vetshub - Farm Management System</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #2E7D32;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        
+        .icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+        .features {
+            text-align: left;
+            margin: 30px 0;
+        }
+        
+        .features h2 {
+            color: #2E7D32;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .features ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .features li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #666;
+        }
+        
+        .features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #2E7D32;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .install-prompt {
+            background: #2E7D32;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .install-prompt:hover {
+            background: #1B5E20;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .status.online {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+        
+        .status.offline {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🐄</div>
+        <h1>Vetshub</h1>
+        <p>A comprehensive farm management system that centralizes data and automates operations to optimize production, increase profitability, and promote sustainability.</p>
+        
+        <div class="features">
+            <h2>Key Features</h2>
+            <ul>
+                <li>Data-driven farm management</li>
+                <li>Production optimization</li>
+                <li>Automated operations</li>
+                <li>Sustainability tracking</li>
+                <li>Works offline</li>
+            </ul>
+        </div>
+        
+        <button class="install-prompt" id="installButton">Install App</button>
+        
+        <div class="status" id="status">
+            <strong>Status:</strong> <span id="connectionStatus">Checking...</span>
+        </div>
+    </div>
+    
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+        
+        // Install prompt
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Update UI to show install button
+            installButton.style.display = 'inline-block';
+        });
+        
+        installButton.addEventListener('click', async () => {
+            if (!deferredPrompt) {
+                return;
+            }
+            // Show the install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            // Clear the deferred prompt variable
+            deferredPrompt = null;
+            // Hide the install button
+            installButton.style.display = 'none';
+        });
+        
+        // Check online/offline status
+        function updateOnlineStatus() {
+            const statusDiv = document.getElementById('status');
+            const statusText = document.getElementById('connectionStatus');
+            
+            if (navigator.onLine) {
+                statusDiv.className = 'status online';
+                statusText.textContent = 'Online';
+            } else {
+                statusDiv.className = 'status offline';
+                statusText.textContent = 'Offline (PWA mode)';
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        window.addEventListener('load', updateOnlineStatus);
+    </script>
+</body>
+</html>
