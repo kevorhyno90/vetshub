@@ -685,6 +685,19 @@ async function initFieldMap() {
     }).addTo(_fieldMap);
     _fieldDrawnItems = new L.FeatureGroup();
     _fieldMap.addLayer(_fieldDrawnItems);
+    // Ensure draw plugin is available. If the patched local copy didn't expose the constructor
+    // (some environments or loading ordering can cause that), dynamically load the CDN fallback.
+    if (!L.Control || typeof L.Control.Draw !== 'function') {
+        console.warn('L.Control.Draw not available; loading CDN fallback for Leaflet.draw');
+        await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js';
+            s.onload = resolve;
+            s.onerror = () => reject(new Error('Failed to load leaflet.draw from CDN'));
+            document.head.appendChild(s);
+        }).catch(err => { console.error(err); });
+    }
+
     const drawControl = new L.Control.Draw({
         edit: { featureGroup: _fieldDrawnItems },
         draw: { polygon: true, polyline: false, rectangle: true, circle: false, marker: false }
