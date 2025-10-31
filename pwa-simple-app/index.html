@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="src/styles.css">
+    <!-- Leaflet CSS (local copy to avoid browser SRI/parse warnings in dev) -->
+    <link rel="stylesheet" href="src/leaflet.css" />
+    <!-- Load leaflet.draw stylesheet as a normal stylesheet so it's applied before render to avoid FOUC -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" referrerpolicy="no-referrer">
     <title>PWA Simple App</title>
 </head>
 <body>
@@ -42,155 +47,522 @@
     <main>
         <section id="dashboard" class="section active">
             <h2>Overview</h2>
-            <div id="overview-area">Loading overview...</div>
+            <nav class="subnav">
+                <button data-sub="overview" class="active">Overview</button>
+                <button data-sub="quick">Quick Actions</button>
+                <button data-sub="alerts">Alerts</button>
+            </nav>
+
+            <div class="sub-section" id="dashboard-overview">
+                <div id="overview-area">Loading overview...</div>
+            </div>
+
+            <div class="sub-section" id="dashboard-quick" style="display:none">
+                <p>Quick actions and shortcuts.</p>
+            </div>
+
+            <div class="sub-section" id="dashboard-alerts" style="display:none">
+                <p>Critical alerts and notifications.</p>
+            </div>
         </section>
 
         <section id="crop" class="section">
             <h2>Crop Management</h2>
-            <form id="crop-form" class="item-form">
-                <input type="text" id="crop-name" placeholder="Crop name (e.g., Corn)" required />
-                <input type="text" id="crop-field" placeholder="Field / Plot" />
-                <input type="date" id="crop-planting" placeholder="Planting date" />
-                <button type="submit">Add Crop</button>
-            </form>
-            <div id="crop-list" class="item-list">No crops yet.</div>
+            <nav class="subnav">
+                <button data-sub="overview" class="active">Overview</button>
+                <button data-sub="manage">Manage</button>
+                <button data-sub="plans">Planting Plans</button>
+                <button data-sub="reports">Reports</button>
+            </nav>
+
+            <div class="sub-section" id="crop-overview">
+                <div id="crop-overview-stats" class="stats">Loading...</div>
+                <div id="crop-upcoming" class="card">
+                    <h4>Upcoming Plantings</h4>
+                    <ul id="crop-upcoming-list"></ul>
+                </div>
+            </div>
+
+            <div class="sub-section" id="crop-manage">
+                <form id="crop-form" class="item-form">
+                    <input type="text" id="crop-name" placeholder="Crop name (e.g., Corn)" required />
+                    <input type="text" id="crop-field" placeholder="Field / Plot" />
+                    <input type="date" id="crop-planting" placeholder="Planting date" />
+                    <button type="submit">Add Crop</button>
+                </form>
+                <div id="crop-list" class="item-list">No crops yet.</div>
+            </div>
+
+            <div class="sub-section" id="crop-plans" style="display:none">
+                <h4>Planting Plans</h4>
+                <div id="crop-plans-list">No plans yet.</div>
+            </div>
+
+            <div class="sub-section" id="crop-reports" style="display:none">
+                <p>Crop reports and export options.</p>
+            </div>
         </section>
 
         <section id="livestock" class="section">
             <h2>Livestock</h2>
-            <form id="livestock-form" class="item-form">
-                <input type="text" id="animal-id" placeholder="Animal ID / Tag" required />
-                <input type="text" id="animal-type" placeholder="Type (e.g., Cow)" />
-                <input type="text" id="animal-breed" placeholder="Breed" />
-                <button type="submit">Add Animal</button>
-            </form>
-            <div id="livestock-list" class="item-list">No animals yet.</div>
+            <nav class="subnav">
+                <button data-sub="overview" class="active">Overview</button>
+                <button data-sub="herd">Herd</button>
+                <button data-sub="health">Health</button>
+                <button data-sub="breeding">Breeding</button>
+            </nav>
+
+            <div class="sub-section" id="livestock-overview">
+                <div id="livestock-stats" class="stats">Loading...</div>
+            </div>
+
+            <div class="sub-section" id="livestock-herd">
+                <form id="livestock-form" class="item-form">
+                    <input type="text" id="animal-id" placeholder="Animal ID / Tag" required />
+                    <input type="text" id="animal-type" placeholder="Type (e.g., Cow)" />
+                    <input type="text" id="animal-breed" placeholder="Breed" />
+                    <button type="submit">Add Animal</button>
+                </form>
+                <div id="livestock-list" class="item-list">No animals yet.</div>
+            </div>
+
+            <div class="sub-section" id="livestock-health" style="display:none">
+                <h4>Health Records</h4>
+                <div id="livestock-health-list">No records.</div>
+            </div>
+
+            <div class="sub-section" id="livestock-breeding" style="display:none">
+                <h4>Breeding</h4>
+                <div id="livestock-breeding-list">No breeding records.</div>
+            </div>
         </section>
 
         <section id="inventory" class="section">
             <h2>Inventory</h2>
-            <form id="inventory-form" class="item-form">
-                <input type="text" id="inv-name" placeholder="Item name (Feed, Seed, Fuel)" required />
-                <input type="number" id="inv-qty" placeholder="Quantity" step="any" />
-                <input type="text" id="inv-unit" placeholder="Unit (kg, L, units)" />
-                <button type="submit">Add Inventory</button>
-            </form>
-            <div id="inventory-list" class="item-list">No inventory yet.</div>
+            <nav class="subnav">
+                <button data-sub="overview" class="active">Overview</button>
+                <button data-sub="stock">Stock</button>
+                <button data-sub="suppliers">Suppliers</button>
+                <button data-sub="movements">Movements</button>
+            </nav>
+
+            <div class="sub-section" id="inventory-overview">
+                <div id="inventory-stats" class="stats">Loading...</div>
+            </div>
+
+            <div class="sub-section" id="inventory-stock">
+                <form id="inventory-form" class="item-form">
+                    <input type="text" id="inv-name" placeholder="Item name (Feed, Seed, Fuel)" required />
+                    <input type="number" id="inv-qty" placeholder="Quantity" step="any" />
+                    <input type="text" id="inv-unit" placeholder="Unit (kg, L, units)" />
+                    <button type="submit">Add Inventory</button>
+                </form>
+                <div id="inventory-list" class="item-list">No inventory yet.</div>
+            </div>
+
+            <div class="sub-section" id="inventory-suppliers" style="display:none">
+                <h4>Suppliers</h4>
+                <div id="inventory-suppliers-list">No suppliers yet.</div>
+            </div>
+
+            <div class="sub-section" id="inventory-movements" style="display:none">
+                <p>Stock in/out movements and audit trail.</p>
+            </div>
         </section>
 
         <section id="fields" class="section">
             <h2>Fields & Boundaries</h2>
-            <form id="field-form" class="item-form">
-                <input type="text" id="field-name" placeholder="Field name" required />
-                <textarea id="field-geojson" placeholder='Paste GeoJSON Polygon here (or leave blank)'></textarea>
-                <button type="submit">Add Field</button>
-            </form>
-            <div id="fields-list" class="item-list">No fields yet.</div>
+            <nav class="subnav">
+                <button data-sub="map" class="active">Map</button>
+                <button data-sub="manage">Manage</button>
+                <button data-sub="soil">Soil Tests</button>
+                <button data-sub="reports">Reports</button>
+            </nav>
+
+            <div class="sub-section" id="fields-mapview">
+                    <div class="fields-grid">
+                        <div id="fields-map" style="height:420px; border-radius:8px; overflow:hidden;"></div>
+                        <aside class="fields-panel card">
+                            <div class="fields-stats">
+                                <h4>Fields summary</h4>
+                                <div id="fields-summary">Loading...</div>
+                            </div>
+                            <div class="card">
+                                <h4>Quick actions</h4>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                                    <button id="btn-new-field" class="btn">New field (form)</button>
+                                    <button id="btn-export-fields" class="btn secondary">Export Fields (GeoJSON)</button>
+                                    <button id="btn-refresh-fields" class="btn">Refresh</button>
+                                </div>
+                            </div>
+                            <div class="card" style="flex:1;overflow:auto">
+                                <h4>Recent fields</h4>
+                                <div id="fields-recent-list" style="display:flex;flex-direction:column;gap:8px"></div>
+                            </div>
+                        </aside>
+                    </div>
+            </div>
+
+            <div class="sub-section" id="fields-manage" style="display:none">
+                <form id="field-form" class="item-form card">
+                    <div class="full"><label for="field-name">Field name</label><input type="text" id="field-name" placeholder="Field name" required /></div>
+                    <div class="field-row">
+                        <div><label for="field-area">Area (ha)</label><input type="number" id="field-area" placeholder="Area in hectares" step="0.01" /></div>
+                        <div><label for="field-soil">Soil type</label>
+                            <select id="field-soil">
+                                <option value="">-- select --</option>
+                                <option>Loam</option>
+                                <option>Clay</option>
+                                <option>Sandy</option>
+                                <option>Peat</option>
+                                <option>Silt</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="full"><label for="field-lastcrop">Last crop</label><input type="text" id="field-lastcrop" placeholder="e.g., Winter Wheat" /></div>
+                    <div class="full"><label for="field-notes">Notes</label><textarea id="field-notes" rows="3" placeholder="Soil tests, drainage notes..."></textarea></div>
+                    <div class="full"><label for="field-geojson">Geometry (GeoJSON)</label><textarea id="field-geojson" placeholder='Paste GeoJSON Polygon here (or leave blank)'></textarea></div>
+                    <div class="full"><label for="field-photo">Photo (optional)</label><input type="file" id="field-photo" accept="image/*" capture="environment" /></div>
+                    <div><button type="submit">Add Field</button></div>
+                </form>
+
+                <div class="card" style="margin-top:12px">
+                    <h4>Saved fields</h4>
+                    <div style="overflow:auto">
+                        <table id="fields-table" class="simple" style="width:100%;min-width:920px;border-collapse:collapse">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Area (ha)</th>
+                                    <th>Soil</th>
+                                    <th>Last crop</th>
+                                    <th>Notes</th>
+                                    <th>Geometry</th>
+                                    <th>Created</th>
+                                    <th>Photos</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="9" class="muted">No fields yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sub-section" id="fields-soil" style="display:none">
+                <h4>Soil Tests</h4>
+                <div id="fields-soil-list">No soil tests.</div>
+            </div>
+
+            <div class="sub-section" id="fields-reports" style="display:none">
+                <h4>Field Reports</h4>
+                <div id="fields-reports-list">No reports.</div>
+            </div>
         </section>
 
         <section id="activities" class="section">
             <h2>Field Activities</h2>
-            <form id="activity-form" class="item-form">
-                <input type="text" id="act-type" placeholder="Activity type (weeding, harvest)" required />
-                <input type="date" id="act-date" />
-                <input type="text" id="act-field" placeholder="Field ID" />
-                <input type="text" id="act-crop" placeholder="Crop ID" />
-                <input type="text" id="act-worker" placeholder="Worker" />
-                <input type="number" id="act-cost" placeholder="Cost" step="0.01" />
-                <button type="button" id="geo-capture">Capture Location</button>
-                <input type="hidden" id="act-lat" />
-                <input type="hidden" id="act-lng" />
-                <button type="submit">Add Activity</button>
-            </form>
-            <div id="activities-list" class="item-list">No activities yet.</div>
+            <nav class="subnav">
+                <button data-sub="log" class="active">Log</button>
+                <button data-sub="calendar">Calendar</button>
+                <button data-sub="analytics">Analytics</button>
+            </nav>
+
+            <div class="sub-section" id="activities-log">
+                <form id="activity-form" class="item-form">
+                    <input type="text" id="act-type" placeholder="Activity type (weeding, harvest)" required />
+                    <input type="date" id="act-date" />
+                    <input type="text" id="act-field" placeholder="Field ID" />
+                    <input type="text" id="act-crop" placeholder="Crop ID" />
+                    <input type="text" id="act-worker" placeholder="Worker" />
+                    <input type="number" id="act-cost" placeholder="Cost" step="0.01" />
+                    <button type="button" id="geo-capture">Capture Location</button>
+                    <input type="file" id="act-photo" accept="image/*" capture="environment" />
+                    <input type="hidden" id="act-lat" />
+                    <input type="hidden" id="act-lng" />
+                    <button type="submit">Add Activity</button>
+                </form>
+                <div id="activities-list" class="item-list">No activities yet.</div>
+            </div>
+
+            <div class="sub-section" id="activities-calendar" style="display:none">
+                <h4>Calendar</h4>
+                <div id="activities-calendar-list">No scheduled activities.</div>
+            </div>
+
+            <div class="sub-section" id="activities-analytics" style="display:none">
+                <h4>Analytics</h4>
+                <div id="activities-analytics-area">Charts and summaries will appear here.</div>
+            </div>
         </section>
 
         <section id="equipment" class="section">
             <h2>Equipment & Maintenance</h2>
-            <form id="equipment-form" class="item-form">
-                <input type="text" id="equip-name" placeholder="Equipment name" required />
-                <input type="text" id="equip-type" placeholder="Type (tractor, harvester)" />
-                <input type="date" id="equip-purchase" />
-                <button type="submit">Add Equipment</button>
-            </form>
-            <div id="equipment-list" class="item-list">No equipment yet.</div>
+            <nav class="subnav">
+                <button data-sub="fleet" class="active">Fleet</button>
+                <button data-sub="maintenance">Maintenance</button>
+                <button data-sub="schedules">Schedules</button>
+            </nav>
+
+            <div class="sub-section" id="equipment-fleet">
+                <form id="equipment-form" class="item-form">
+                    <input type="text" id="equip-name" placeholder="Equipment name" required />
+                    <input type="text" id="equip-type" placeholder="Type (tractor, harvester)" />
+                    <input type="date" id="equip-purchase" />
+                    <button type="submit">Add Equipment</button>
+                </form>
+                <div id="equipment-list" class="item-list">No equipment yet.</div>
+            </div>
+
+            <div class="sub-section" id="equipment-maintenance" style="display:none">
+                <h4>Maintenance Logs</h4>
+                <div id="equipment-maintenance-list">No maintenance logs.</div>
+            </div>
+
+            <div class="sub-section" id="equipment-schedules" style="display:none">
+                <h4>Schedules</h4>
+                <div id="equipment-schedules-list">No schedules.</div>
+            </div>
         </section>
 
         <section id="contacts" class="section">
             <h2>Contacts & Vendors</h2>
-            <form id="contact-form" class="item-form">
-                <input type="text" id="contact-name" placeholder="Name / Vendor" required />
-                <input type="text" id="contact-type" placeholder="Type (vendor, buyer)" />
-                <input type="text" id="contact-phone" placeholder="Phone" />
-                <button type="submit">Add Contact</button>
-            </form>
-            <div id="contacts-list" class="item-list">No contacts yet.</div>
+            <nav class="subnav">
+                <button data-sub="all" class="active">All</button>
+                <button data-sub="vendors">Vendors</button>
+                <button data-sub="buyers">Buyers</button>
+            </nav>
+
+            <div class="sub-section" id="contacts-all">
+                <form id="contact-form" class="item-form">
+                    <input type="text" id="contact-name" placeholder="Name / Vendor" required />
+                    <input type="text" id="contact-type" placeholder="Type (vendor, buyer)" />
+                    <input type="text" id="contact-phone" placeholder="Phone" />
+                    <button type="submit">Add Contact</button>
+                </form>
+                <div id="contacts-list" class="item-list">No contacts yet.</div>
+            </div>
+
+            <div class="sub-section" id="contacts-vendors" style="display:none">
+                <h4>Vendors</h4>
+                <div id="contacts-vendors-list">No vendors.</div>
+            </div>
+
+            <div class="sub-section" id="contacts-buyers" style="display:none">
+                <h4>Buyers</h4>
+                <div id="contacts-buyers-list">No buyers.</div>
+            </div>
         </section>
 
         <section id="orders" class="section">
             <h2>Orders & Sales</h2>
-            <form id="order-form" class="item-form">
-                <input type="text" id="order-desc" placeholder="Order description" required />
-                <input type="number" id="order-amount" placeholder="Amount" step="0.01" />
-                <input type="date" id="order-date" />
-                <button type="submit">Add Order</button>
-            </form>
-            <div id="orders-list" class="item-list">No orders yet.</div>
+            <nav class="subnav">
+                <button data-sub="sales" class="active">Sales</button>
+                <button data-sub="purchases">Purchases</button>
+                <button data-sub="invoices">Invoices</button>
+            </nav>
+
+            <div class="sub-section" id="orders-sales">
+                <form id="order-form" class="item-form">
+                    <input type="text" id="order-desc" placeholder="Order description" required />
+                    <input type="number" id="order-amount" placeholder="Amount" step="0.01" />
+                    <input type="date" id="order-date" />
+                    <button type="submit">Add Order</button>
+                </form>
+                <div id="orders-list" class="item-list">No orders yet.</div>
+            </div>
+
+            <div class="sub-section" id="orders-purchases" style="display:none">
+                <h4>Purchases</h4>
+                <div id="orders-purchases-list">No purchase orders.</div>
+            </div>
+
+            <div class="sub-section" id="orders-invoices" style="display:none">
+                <h4>Invoices</h4>
+                <div id="orders-invoices-list">No invoices.</div>
+            </div>
         </section>
 
         <section id="animals" class="section">
             <h2>Animals & Breeding</h2>
-            <form id="animal-form" class="item-form">
-                <input type="text" id="animal-tag" placeholder="Tag / ID" required />
-                <input type="text" id="animal-species" placeholder="Species" />
-                <input type="date" id="animal-dob" />
-                <input type="text" id="animal-parents" placeholder="Parent IDs (comma)" />
-                <button type="submit">Add Animal</button>
-            </form>
-            <div id="animals-list" class="item-list">No animals yet.</div>
+            <nav class="subnav">
+                <button data-sub="list" class="active">List</button>
+                <button data-sub="breeding">Breeding</button>
+                <button data-sub="health">Health</button>
+            </nav>
+
+            <div class="sub-section" id="animals-list">
+                <div class="animals-grid" style="display:flex;gap:12px;align-items:flex-start">
+                    <div style="flex:1;min-width:280px">
+                        <div class="card">
+                            <div style="display:flex;justify-content:space-between;align-items:center">
+                                <h4>Animals</h4>
+                                <button id="btn-new-animal" class="btn">New</button>
+                            </div>
+                            <div id="animals-list" class="item-list" style="max-height:540px;overflow:auto">Loading animals...</div>
+                        </div>
+                    </div>
+
+                    <aside style="width:420px;min-width:320px">
+                        <div id="animal-detail-card" class="card">
+                            <h4 id="animal-detail-title">Select an animal</h4>
+                            <div id="animal-detail" style="margin-bottom:12px">No animal selected.</div>
+                            <div style="display:flex;gap:8px">
+                                <button id="animal-edit-btn" class="btn">Edit</button>
+                                <button id="animal-delete-btn" class="btn secondary">Delete</button>
+                                <button id="animal-copy-btn" class="btn">Duplicate</button>
+                            </div>
+                        </div>
+
+                        <div id="animal-editor" class="card" style="margin-top:12px;display:none">
+                            <h4 id="animal-editor-title">Animal</h4>
+                            <form id="animal-editor-form" class="item-form">
+                                <div class="full"><label for="edit-animal-tag">Tag / ID</label><input type="text" id="edit-animal-tag" required /></div>
+                                <div class="full"><label for="edit-animal-species">Species</label><input type="text" id="edit-animal-species" /></div>
+                                <div class="full"><label for="edit-animal-dob">Date of birth</label><input type="date" id="edit-animal-dob" /></div>
+                                <div class="full"><label for="edit-animal-sex">Sex</label>
+                                    <select id="edit-animal-sex"><option value="">--</option><option>Male</option><option>Female</option><option>Unknown</option></select>
+                                </div>
+                                <div class="full"><label for="edit-animal-breed">Breed</label><input type="text" id="edit-animal-breed" /></div>
+                                <div class="full"><label for="edit-animal-parents">Parent IDs (comma)</label><input type="text" id="edit-animal-parents" /></div>
+                                <div class="full"><label for="edit-animal-notes">Notes</label><textarea id="edit-animal-notes" rows="3"></textarea></div>
+                                <div style="display:flex;gap:8px">
+                                    <button type="submit" id="animal-save-btn" class="btn">Save</button>
+                                    <button type="button" id="animal-cancel-btn" class="btn secondary">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <div class="sub-section" id="animals-breeding" style="display:none">
+                <h4>Breeding Schedules</h4>
+                <div id="animals-breeding-list">No schedules.</div>
+            </div>
+
+            <div class="sub-section" id="animals-health" style="display:none">
+                <h4>Health Records</h4>
+                <div id="animals-health-list">No health events.</div>
+            </div>
         </section>
 
         <section id="attachments" class="section">
             <h2>Attachments (photos, files)</h2>
-            <form id="attachment-form" class="item-form">
-                <input type="file" id="attachment-file" />
-                <input type="text" id="attachment-desc" placeholder="Description / link to record id" />
-                <button type="submit">Upload</button>
-            </form>
-            <div id="attachments-list" class="item-list">No attachments yet.</div>
+            <nav class="subnav">
+                <button data-sub="gallery" class="active">Gallery</button>
+                <button data-sub="upload">Upload</button>
+                <button data-sub="linked">Linked</button>
+            </nav>
+
+            <div class="sub-section" id="attachments-gallery">
+                <div id="attachments-gallery-grid" class="gallery">No attachments yet.</div>
+            </div>
+
+            <div class="sub-section" id="attachments-upload" style="display:none">
+                <form id="attachment-form" class="item-form">
+                    <input type="file" id="attachment-file" />
+                    <input type="text" id="attachment-desc" placeholder="Description / link to record id" />
+                    <button type="submit">Upload</button>
+                </form>
+            </div>
+
+            <div class="sub-section" id="attachments-linked" style="display:none">
+                <h4>Files linked to records (fields, activities, animals)</h4>
+                <div id="attachments-linked-list">No linked files.</div>
+            </div>
         </section>
 
         <section id="reports" class="section">
             <h2>Reports & Analytics</h2>
-            <div id="reports-area">Use Export to back up data. Basic reports:</div>
-            <div id="report-production"></div>
-            <div id="report-finance"></div>
+            <nav class="subnav">
+                <button data-sub="production" class="active">Production</button>
+                <button data-sub="finance">Finance</button>
+                <button data-sub="inventory">Inventory</button>
+                <button data-sub="activities">Activities</button>
+            </nav>
+
+            <div class="sub-section" id="reports-production">
+                <div id="report-controls" class="card">
+                    <label for="report-select">Select report:</label>
+                    <select id="report-select"><option value="">-- choose report --</option></select>
+                    <button id="report-view-btn" class="btn">View</button>
+                    <button id="report-download-btn" class="btn">Download (.doc)</button>
+                </div>
+                <div id="report-viewer" class="card" style="margin-top:12px;">Select a report to view.</div>
+                <div id="report-production-table"></div>
+            </div>
+
+            <div class="sub-section" id="reports-finance" style="display:none">
+                <div id="report-finance">Finance reports and P&L.</div>
+            </div>
+
+            <div class="sub-section" id="reports-inventory" style="display:none">
+                <p>Inventory valuation and movements report.</p>
+            </div>
+
+            <div class="sub-section" id="reports-activities" style="display:none">
+                <p>Activity logs and analytics.</p>
+            </div>
         </section>
 
         <section id="tasks" class="section">
             <h2>Tasks & Scheduling</h2>
-            <form id="task-form" class="item-form">
-                <input type="text" id="task-title" placeholder="Task title" required />
-                <input type="date" id="task-date" />
-                <input type="text" id="task-assignee" placeholder="Assign to" />
-                <button type="submit">Add Task</button>
-            </form>
-            <div id="task-list" class="item-list">No tasks yet.</div>
+            <nav class="subnav">
+                <button data-sub="board" class="active">Board</button>
+                <button data-sub="calendar">Calendar</button>
+                <button data-sub="completed">Completed</button>
+            </nav>
+
+            <div class="sub-section" id="tasks-board">
+                <form id="task-form" class="item-form">
+                    <input type="text" id="task-title" placeholder="Task title" required />
+                    <input type="date" id="task-date" />
+                    <input type="text" id="task-assignee" placeholder="Assign to" />
+                    <button type="submit">Add Task</button>
+                </form>
+                <div id="task-list" class="item-list">No tasks yet.</div>
+            </div>
+
+            <div class="sub-section" id="tasks-calendar" style="display:none">
+                <p>Task calendar view and reminders.</p>
+            </div>
+
+            <div class="sub-section" id="tasks-completed" style="display:none">
+                <p>Completed tasks archive.</p>
+            </div>
         </section>
 
         <section id="finance" class="section">
             <h2>Finance (Income & Expenses)</h2>
-            <form id="finance-form" class="item-form">
-                <input type="text" id="fin-desc" placeholder="Description (Sale, Seed purchase)" required />
-                <input type="number" id="fin-amount" placeholder="Amount (positive income, negative expense)" step="0.01" required />
-                <select id="fin-type">
-                    <option value="income">Income</option>
-                    <option value="expense">Expense</option>
-                </select>
-                <button type="submit">Add Record</button>
-            </form>
-            <div id="finance-list" class="item-list">No finance records yet.</div>
-            <div id="finance-summary" class="summary">Summary: —</div>
+            <nav class="subnav">
+                <button data-sub="summary" class="active">Summary</button>
+                <button data-sub="records">Records</button>
+                <button data-sub="reports">Reports</button>
+            </nav>
+
+            <div class="sub-section" id="finance-summary-view">
+                <div id="finance-summary" class="summary">Summary: —</div>
+            </div>
+
+            <div class="sub-section" id="finance-records" style="display:none">
+                <form id="finance-form" class="item-form">
+                    <input type="text" id="fin-desc" placeholder="Description (Sale, Seed purchase)" required />
+                    <input type="number" id="fin-amount" placeholder="Amount (positive income, negative expense)" step="0.01" required />
+                    <select id="fin-type">
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                    <button type="submit">Add Record</button>
+                </form>
+                <div id="finance-list" class="item-list">No finance records yet.</div>
+            </div>
+
+            <div class="sub-section" id="finance-reports" style="display:none">
+                <p>Finance P&L, cashflow and export options.</p>
+            </div>
         </section>
     </main>
 
@@ -200,6 +572,26 @@
 
     </div> <!-- .layout -->
 
+    <!-- Leaflet JS (no SRI to avoid integrity decode errors in dev host) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js" referrerpolicy="no-referrer"></script>
     <script type="module" src="src/main.js"></script>
+
+    <!-- Modal editor -->
+    <div id="modal" class="modal" aria-hidden="true">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel" role="dialog" aria-modal="true">
+            <header class="modal-header">
+                <h3 id="modal-title">Edit</h3>
+                <button id="modal-close" class="btn">Close</button>
+            </header>
+            <div class="modal-body">
+                <form id="modal-form"></form>
+            </div>
+            <footer class="modal-footer">
+                <button id="modal-save" class="btn">Save</button>
+            </footer>
+        </div>
+    </div>
 </body>
 </html>
