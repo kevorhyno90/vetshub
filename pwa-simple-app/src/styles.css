@@ -42,6 +42,124 @@ body {
 
 .card { background: var(--card); padding:12px; border-radius:8px; border:1px solid #e6efe0; }
 
+/* Data Table Styles */
+.data-table {
+    border-collapse: collapse;
+    font-size: 14px;
+    background: white;
+}
+
+.data-table th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table td {
+    border: 1px solid #dee2e6;
+    padding: 10px 8px;
+    vertical-align: middle;
+}
+
+.data-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background-color: #fdfdfd;
+}
+
+.data-table tbody tr:nth-child(even):hover {
+    background-color: #f1f3f4;
+}
+
+/* Editable table cells */
+.data-table .editable-cell {
+    cursor: pointer;
+    position: relative;
+}
+
+.data-table .editable-cell:hover {
+    background-color: #e3f2fd;
+    border-color: #2196f3;
+}
+
+.data-table .editing-cell {
+    background-color: #fff3e0;
+    border-color: #ff9800;
+}
+
+/* Inline edit input */
+.inline-edit {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 4px;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.inline-edit:focus {
+    outline: 2px solid #2196f3;
+    background: white;
+    border-radius: 3px;
+}
+
+/* Table action buttons */
+.table-actions {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.table-actions .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    min-width: auto;
+}
+
+/* Status badges in table */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Responsive table container */
+@media (max-width: 768px) {
+    .data-table {
+        font-size: 12px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 8px 4px;
+    }
+    
+    .table-actions {
+        flex-direction: column;
+    }
+    
+    .table-actions .btn {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+}
+
 
 main {
     padding: 20px;
@@ -138,6 +256,277 @@ table.simple tbody tr:nth-child(even) { background: #fbfefe; }
 /* small thumbnail for photos in tables */
 .thumb { width:48px; height:36px; object-fit:cover; border-radius:4px; border:1px solid #e6efe0; }
 
+/* Animal management styles */
+.animals-grid { display:flex; gap:12px; align-items:flex-start; }
+.animal-item { cursor: pointer; transition: background-color 0.2s; }
+.animal-item:hover { background-color: #f9fdf9; }
+.animal-item.selected { background-color: #e9f6e9; border-color: var(--accent); }
+
+.stat-item { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 8px 0; 
+    border-bottom: 1px solid #f0f0f0; 
+}
+.stat-item:last-child { border-bottom: none; }
+.stat-label { font-size: 14px; color: var(--muted); }
+.stat-value { font-weight: 600; color: var(--text); }
+
+.genealogy-tree { 
+    font-family: monospace; 
+    white-space: pre-wrap; 
+    line-height: 1.6; 
+}
+
+.performance-chart canvas { 
+    max-width: 100%; 
+    height: auto; 
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.status-active { background: #e8f5e8; color: #2d5a2d; }
+.status-pregnant { background: #fff3cd; color: #856404; }
+.status-sick { background: #f8d7da; color: #721c24; }
+.status-sold { background: #e2e3e5; color: #41464b; }
+
+/* Record type badges */
+.record-type {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.type-vaccination { background: #e1f5fe; color: #01579b; }
+.type-treatment { background: #fff3e0; color: #e65100; }
+.type-breeding { background: #f3e5f5; color: #4a148c; }
+.type-weight { background: #e8f5e8; color: #2d5a2d; }
+
+/* Genealogy Tree Styles */
+.family-tree {
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fffe 0%, #f1f9f8 100%);
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.generation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+    position: relative;
+}
+
+.generation-label {
+    font-weight: 600;
+    color: #2e7d32;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.animal-node {
+    background: white;
+    border: 2px solid #4caf50;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin: 0 10px;
+    min-width: 140px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.animal-node:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.25);
+    border-color: #2e7d32;
+}
+
+.animal-node.current {
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    color: white;
+    border-color: #2e7d32;
+    font-weight: 600;
+}
+
+.animal-node .name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.animal-node .breed {
+    font-size: 12px;
+    color: #666;
+    opacity: 0.8;
+}
+
+.animal-node.current .breed {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tree-connector {
+    position: absolute;
+    border-left: 2px solid #81c784;
+    height: 30px;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tree-connector::before {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: -1px;
+    width: 2px;
+    height: 20px;
+    background: #81c784;
+}
+
+/* Performance Chart Styles */
+.performance-chart {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.chart-container {
+    height: 300px;
+    position: relative;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #dee2e6;
+}
+
+.chart-placeholder {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Health Record Styles */
+.health-record {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-left: 4px solid #17a2b8;
+    transition: all 0.3s ease;
+}
+
+.health-record:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.health-record .record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.health-record .record-date {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.health-record .record-description {
+    color: #495057;
+    line-height: 1.5;
+    margin-top: 8px;
+}
+
+/* Breeding Record Styles */
+.breeding-record {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-left: 4px solid #e91e63;
+    transition: all 0.3s ease;
+}
+
+.breeding-record:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.breeding-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.breeding-detail {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.breeding-detail .label {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.breeding-detail .value {
+    font-weight: 500;
+    color: #495057;
+}
+
 @media (max-width: 920px) {
     .fields-grid { grid-template-columns: 1fr; }
+    .animals-grid { flex-direction: column; }
+    
+    .family-tree {
+        padding: 15px 10px;
+        overflow-x: scroll;
+    }
+    
+    .animal-node {
+        min-width: 120px;
+        margin: 0 5px;
+        padding: 10px 12px;
+    }
+    
+    .breeding-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .generation {
+        margin: 15px 0;
+    }
 }

@@ -39,6 +39,15 @@ function showSubSection(module, sub) {
             s.style.display = 'none';
         }
     });
+    
+    // Trigger content rendering for the specific section
+    if (module === 'animals') {
+        if (sub === 'list') renderAnimalsList();
+        else if (sub === 'breeding') renderBreedingList();
+        else if (sub === 'health') renderHealthList();
+        else if (sub === 'performance') renderPerformanceList();
+        else if (sub === 'genealogy') updateGenealogySelect();
+    }
 }
 
 async function renderList(module) {
@@ -98,7 +107,7 @@ async function renderList(module) {
 }
 
 function wireListActions(module) {
-    const listEl = q(`#${module}-list`);
+    const listEl = q(`#animals-${module}-list`);
     if (!listEl) return;
     listEl.addEventListener('click', async (e) => {
         const item = e.target.closest('.item');
@@ -107,16 +116,73 @@ function wireListActions(module) {
         if (e.target.classList.contains('delete')) {
             if (confirm('Delete record?')) {
                 await deleteRecord(module, id);
-                await renderAll();
+                if (module === 'breeding') await renderBreedingList();
+                else if (module === 'health') await renderHealthList();
+                else if (module === 'performance') await renderPerformanceList();
+                else await renderAll();
             }
         } else if (e.target.classList.contains('edit')) {
-            // open modal editor for this record
+            // open custom editor for this record
             const recs = await getRecords(module);
             const rec = recs.find(r => r.id === id);
             if (!rec) return;
-            openModalEditor(module, rec);
+            
+            if (module === 'breeding') {
+                showBreedingEditor(true);
+                populateBreedingForm(rec);
+            } else if (module === 'health') {
+                showHealthEditor(true);
+                populateHealthForm(rec);
+            } else if (module === 'performance') {
+                showPerformanceEditor(true);
+                populatePerformanceForm(rec);
+            } else {
+                openModalEditor(module, rec);
+            }
         }
     });
+}
+
+// Form population functions
+function populateBreedingForm(rec) {
+    q('#breeding-female').value = rec.female || '';
+    q('#breeding-male').value = rec.male || '';
+    q('#breeding-date').value = rec.date || '';
+    q('#breeding-method').value = rec.method || 'natural';
+    q('#breeding-expected-due').value = rec.expectedDue || '';
+    q('#breeding-status').value = rec.status || 'bred';
+    q('#breeding-offspring').value = (rec.offspring || []).join(', ');
+    q('#breeding-notes').value = rec.notes || '';
+    
+    // Store record ID for updating
+    q('#breeding-form').dataset.recordId = rec.id;
+}
+
+function populateHealthForm(rec) {
+    q('#health-animal').value = rec.animal || '';
+    q('#health-date').value = rec.date || '';
+    q('#health-type').value = rec.type || '';
+    q('#health-description').value = rec.description || '';
+    q('#health-veterinarian').value = rec.veterinarian || '';
+    q('#health-cost').value = rec.cost || '';
+    q('#health-weight').value = rec.weight || '';
+    q('#health-next-due').value = rec.nextDue || '';
+    q('#health-notes').value = rec.notes || '';
+    
+    // Store record ID for updating
+    q('#health-form').dataset.recordId = rec.id;
+}
+
+function populatePerformanceForm(rec) {
+    q('#performance-animal').value = rec.animal || '';
+    q('#performance-date').value = rec.date || '';
+    q('#performance-type').value = rec.type || '';
+    q('#performance-value').value = rec.value || '';
+    q('#performance-unit').value = rec.unit || '';
+    q('#performance-notes').value = rec.notes || '';
+    
+    // Store record ID for updating
+    q('#performance-form').dataset.recordId = rec.id;
 }
 
 /* Modal editor helpers */
@@ -207,8 +273,21 @@ async function renderAll() {
         await populateReports();
         await renderFieldsTable();
         await populateActivitiesCalendar();
+        
+        // Animal management sections
+        await renderAnimalsList();
+        await renderBreedingList();
+        await renderHealthList();
+        await renderPerformanceList();
+        await updateGenealogySelect();
+        
+        // Make sure animals section is properly initialized
+        const animalsSection = q('#animals');
+        if (animalsSection) {
+            // Show the first sub-section (animals list) by default
+            showSubSection('animals', 'list');
+        }
     } catch (err) { console.warn('Subsection render failed', err); }
-
 }
 
 
@@ -288,28 +367,344 @@ async function populateReports() {
 // --- Animals: richer list, detail and editor UI ---
 let _currentAnimalId = null;
 
-async function renderAnimalsList() {
-    const listEl = q('#animals-list');
-    if (!listEl) return;
-    const recs = await getRecords('animals');
-    if (!recs || recs.length === 0) {
-        listEl.innerHTML = '<div class="muted">No animals yet.</div>';
-        const titleEl = q('#animal-detail-title');
-        const detailEl = q('#animal-detail');
-        if (titleEl) titleEl.textContent = 'Select an animal';
-        if (detailEl) detailEl.textContent = 'No animal selected.';
+async function createSampleAnimal() {
+    const sampleAnimal = {
+        tag: 'A001',
+        name: 'Bessie',
+        species: 'cattle',
+        breed: 'Holstein',
+        sex: 'female',
+        dob: '2023-03-15',
+        weight: 450,
+        location: 'Pasture 1',
+        status: 'active',
+        notes: 'Sample animal for testing'
+    };
+    
+    try {
+        await saveRecord('animals', sampleAnimal);
+        await renderAnimalsList();
+        alert('Sample animal created successfully!');
+    } catch (err) {
+        alert('Failed to create sample animal: ' + err);
+    }
+}
+
+// Make function globally accessible
+window.createSampleAnimal = createSampleAnimal;
+
+async function createSampleBreeding() {
+    const sampleBreeding = {
+        female: 'A001',
+        male: 'B002',
+        date: '2024-09-15',
+        method: 'natural',
+        expectedDue: '2025-06-15',
+        status: 'bred',
+        notes: 'Sample breeding record for testing'
+    };
+    
+    try {
+        await saveRecord('breeding', sampleBreeding);
+        await renderBreedingList();
+        alert('Sample breeding record created successfully!');
+    } catch (err) {
+        alert('Failed to create sample breeding record: ' + err);
+    }
+}
+
+window.createSampleBreeding = createSampleBreeding;
+
+async function createSampleHealth() {
+    const sampleHealth = {
+        animal: 'A001',
+        date: '2024-10-01',
+        type: 'vaccination',
+        description: 'Annual vaccination - FMD',
+        veterinarian: 'Dr. Smith',
+        cost: 25.00,
+        nextDue: '2025-10-01',
+        notes: 'Sample health record for testing'
+    };
+    
+    try {
+        await saveRecord('health', sampleHealth);
+        await renderHealthList();
+        alert('Sample health record created successfully!');
+    } catch (err) {
+        alert('Failed to create sample health record: ' + err);
+    }
+}
+
+async function createSamplePerformance() {
+    const samplePerformance = {
+        animal: 'A001',
+        date: '2024-10-20',
+        type: 'weight',
+        value: 475,
+        unit: 'kg',
+        notes: 'Sample performance record for testing'
+    };
+    
+    try {
+        await saveRecord('performance', samplePerformance);
+        await renderPerformanceList();
+        alert('Sample performance record created successfully!');
+    } catch (err) {
+        alert('Failed to create sample performance record: ' + err);
+    }
+}
+
+window.createSampleHealth = createSampleHealth;
+window.createSamplePerformance = createSamplePerformance;
+window.clearAnimalFilters = clearAnimalFilters;
+window.editAnimal = editAnimal;
+window.duplicateAnimal = duplicateAnimal;
+window.deleteAnimal = deleteAnimal;
+
+// Inline editing functionality
+function addInlineEditing() {
+    const editableCells = document.querySelectorAll('.editable-cell');
+    editableCells.forEach(cell => {
+        cell.addEventListener('click', function() {
+            if (this.querySelector('.inline-edit')) return; // Already editing
+            
+            const currentText = this.textContent.trim();
+            const field = this.dataset.field;
+            const animalId = this.closest('tr').dataset.animalId;
+            
+            // Create input element
+            const input = document.createElement('input');
+            input.className = 'inline-edit';
+            input.value = currentText === '-' ? '' : currentText;
+            input.type = field === 'weight' ? 'number' : 'text';
+            
+            // Replace content with input
+            this.innerHTML = '';
+            this.appendChild(input);
+            this.classList.add('editing-cell');
+            input.focus();
+            input.select();
+            
+            // Save on blur or Enter
+            const saveEdit = async () => {
+                const newValue = input.value.trim();
+                this.classList.remove('editing-cell');
+                
+                try {
+                    // Update the record
+                    const animals = await getRecords('animals');
+                    const animal = animals.find(a => a.id === animalId);
+                    if (animal) {
+                        animal[field] = newValue || null;
+                        await updateRecord('animals', animalId, animal);
+                        
+                        // Update the cell display
+                        this.textContent = newValue || '-';
+                        
+                        // Refresh statistics
+                        updateAnimalStats(animals);
+                    }
+                } catch (err) {
+                    alert('Failed to update: ' + err);
+                    this.textContent = currentText; // Revert on error
+                }
+            };
+            
+            const cancelEdit = () => {
+                this.classList.remove('editing-cell');
+                this.textContent = currentText;
+            };
+            
+            input.addEventListener('blur', saveEdit);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveEdit();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
+        });
+    });
+}
+
+async function editAnimal(id) {
+    const animals = await getRecords('animals');
+    const animal = animals.find(a => a.id === id);
+    if (!animal) {
+        alert('Animal not found');
         return;
     }
-    // build clickable list
-    const items = recs.map(r => `<div class="item" data-id="${r.id}"><div><strong>${r.tag || r.id}</strong><div class="muted">${r.species || ''} ${r.breed ? '— ' + r.breed : ''}</div></div></div>`).join('');
-    listEl.innerHTML = items;
+    
+    _currentAnimalId = id;
+    showAnimalEditor(true, animal);
+    q('#animal-editor-title').textContent = `Edit Animal: ${animal.tag || animal.name || id}`;
+}
 
-    // click handler
-    listEl.querySelectorAll('.item').forEach(it => it.addEventListener('click', async (e) => {
-        const id = it.dataset.id;
-        _currentAnimalId = id;
-        await showAnimalDetail(id);
-    }));
+async function duplicateAnimal(id) {
+    const animals = await getRecords('animals');
+    const animal = animals.find(a => a.id === id);
+    if (!animal) {
+        alert('Animal not found');
+        return;
+    }
+    
+    // Create a copy with modified tag
+    const copy = { ...animal };
+    delete copy.id; // Remove ID so it gets a new one
+    copy.tag = (copy.tag || '') + '_copy';
+    copy.name = (copy.name || '') + ' (Copy)';
+    
+    _currentAnimalId = null;
+    showAnimalEditor(true, copy);
+    q('#animal-editor-title').textContent = 'Duplicate Animal';
+}
+
+async function deleteAnimal(id) {
+    const animals = await getRecords('animals');
+    const animal = animals.find(a => a.id === id);
+    if (!animal) {
+        alert('Animal not found');
+        return;
+    }
+    
+    const animalName = animal.tag || animal.name || id;
+    if (!confirm(`Are you sure you want to delete animal "${animalName}"?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        await deleteRecord('animals', id);
+        await renderAnimalsList();
+        alert('Animal deleted successfully');
+    } catch (err) {
+        alert('Delete failed: ' + err);
+    }
+}
+
+async function renderAnimalsList() {
+    const tableBody = q('#animals-table-body');
+    if (!tableBody) return;
+    
+    const recs = await getRecords('animals');
+    const searchTerm = q('#animal-search')?.value?.toLowerCase() || '';
+    const speciesFilter = q('#animal-filter-species')?.value || '';
+    const statusFilter = q('#animal-filter-status')?.value || '';
+    
+    let filteredRecs = recs || [];
+    
+    // Apply filters
+    if (searchTerm) {
+        filteredRecs = filteredRecs.filter(r => 
+            (r.tag || '').toLowerCase().includes(searchTerm) ||
+            (r.name || '').toLowerCase().includes(searchTerm) ||
+            (r.breed || '').toLowerCase().includes(searchTerm) ||
+            (r.species || '').toLowerCase().includes(searchTerm)
+        );
+    }
+    if (speciesFilter) {
+        filteredRecs = filteredRecs.filter(r => r.species === speciesFilter);
+    }
+    if (statusFilter) {
+        filteredRecs = filteredRecs.filter(r => r.status === statusFilter);
+    }
+    
+    // Update statistics
+    updateAnimalStats(recs || []);
+    
+    if (!filteredRecs || filteredRecs.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="13" style="text-align:center;padding:40px;color:#666">
+                    <div style="margin-bottom:16px">
+                        <strong>No animals found</strong>
+                        ${searchTerm || speciesFilter || statusFilter ? '<br>Try adjusting your filters' : ''}
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                        <button class="btn" onclick="document.getElementById('btn-new-animal').click()">➕ Add First Animal</button>
+                        <button class="btn secondary" onclick="createSampleAnimal()">🐄 Add Sample Animal</button>
+                        ${searchTerm || speciesFilter || statusFilter ? '<button class="btn secondary" onclick="clearAnimalFilters()">🔄 Clear Filters</button>' : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    // Build table rows
+    const rows = filteredRecs.map(animal => {
+        const age = animal.dob ? calculateAge(animal.dob) : '-';
+        const statusBadge = animal.status ? `<span class="status-badge status-${animal.status}">${animal.status}</span>` : '-';
+        
+        return `
+            <tr data-animal-id="${animal.id}">
+                <td class="editable-cell" data-field="tag">${animal.tag || '-'}</td>
+                <td class="editable-cell" data-field="name">${animal.name || '-'}</td>
+                <td class="editable-cell" data-field="species">${animal.species || '-'}</td>
+                <td class="editable-cell" data-field="breed">${animal.breed || '-'}</td>
+                <td class="editable-cell" data-field="sex">${animal.sex || '-'}</td>
+                <td>${age}</td>
+                <td class="editable-cell" data-field="weight">${animal.weight || '-'}</td>
+                <td>${statusBadge}</td>
+                <td class="editable-cell" data-field="location">${animal.location || '-'}</td>
+                <td class="editable-cell" data-field="sire">${animal.sire || '-'}</td>
+                <td class="editable-cell" data-field="dam">${animal.dam || '-'}</td>
+                <td class="editable-cell" data-field="notes" title="${animal.notes || ''}">${truncateText(animal.notes || '', 20)}</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="btn" onclick="editAnimal('${animal.id}')" title="Edit">✏️</button>
+                        <button class="btn secondary" onclick="duplicateAnimal('${animal.id}')" title="Duplicate">📋</button>
+                        <button class="btn secondary" onclick="deleteAnimal('${animal.id}')" title="Delete">�️</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    tableBody.innerHTML = rows;
+    
+    // Add inline editing functionality
+    addInlineEditing();
+}
+
+function updateAnimalStats(animals) {
+    const total = animals.length;
+    const active = animals.filter(a => a.status === 'active').length;
+    const breeding = animals.filter(a => ['breeding', 'pregnant', 'lactating'].includes(a.status)).length;
+    const needsAttention = animals.filter(a => ['sick', 'quarantine'].includes(a.status)).length;
+    
+    q('#total-animals-count').textContent = total;
+    q('#active-animals-count').textContent = active;
+    q('#breeding-animals-count').textContent = breeding;
+    q('#attention-animals-count').textContent = needsAttention;
+}
+
+function truncateText(text, maxLength) {
+    if (!text) return '-';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
+
+function clearAnimalFilters() {
+    q('#animal-search').value = '';
+    q('#animal-filter-species').value = '';
+    q('#animal-filter-status').value = '';
+    renderAnimalsList();
+}
+
+function calculateAge(dob) {
+    if (!dob) return '';
+    const birthDate = new Date(dob);
+    const today = new Date();
+    const ageInMs = today - birthDate;
+    const ageInDays = Math.floor(ageInMs / (1000 * 60 * 60 * 24));
+    
+    if (ageInDays < 30) return `${ageInDays}d`;
+    if (ageInDays < 365) return `${Math.floor(ageInDays / 30)}m`;
+    const years = Math.floor(ageInDays / 365);
+    const months = Math.floor((ageInDays % 365) / 30);
+    return months > 0 ? `${years}y ${months}m` : `${years}y`;
 }
 
 async function showAnimalDetail(id) {
@@ -321,92 +716,139 @@ async function showAnimalDetail(id) {
         if (detailEl) detailEl.textContent = 'No animal selected.';
         return;
     }
+    
+    const age = rec.dob ? calculateAge(rec.dob) : '';
+    const statusBadge = rec.status ? `<span class="status-badge status-${rec.status}">${rec.status}</span>` : '';
+    
     if (titleEl) titleEl.textContent = `${rec.tag || rec.id} — ${rec.species || ''}`;
     if (detailEl) {
         detailEl.innerHTML = `
-            <div><strong>Tag:</strong> ${rec.tag || ''}</div>
-            <div><strong>Species:</strong> ${rec.species || ''}</div>
-            <div><strong>Breed:</strong> ${rec.breed || ''}</div>
-            <div><strong>Sex:</strong> ${rec.sex || ''}</div>
-            <div><strong>DOB:</strong> ${rec.dob || ''}</div>
-            <div><strong>Parents:</strong> ${(rec.parentIds && rec.parentIds.length) ? rec.parentIds.join(', ') : ''}</div>
-            <div style="margin-top:8px"><strong>Notes:</strong><div class="muted">${rec.notes || ''}</div></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <h5 style="margin:0">${rec.name || rec.tag || rec.id}</h5>
+                ${statusBadge}
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+                <div><strong>Tag:</strong> ${rec.tag || ''}</div>
+                <div><strong>Species:</strong> ${rec.species || ''}</div>
+                <div><strong>Breed:</strong> ${rec.breed || ''}</div>
+                <div><strong>Sex:</strong> ${rec.sex || ''}</div>
+                <div><strong>Age:</strong> ${age}</div>
+                <div><strong>Weight:</strong> ${rec.weight ? rec.weight + ' kg' : ''}</div>
+            </div>
+            <div style="margin-bottom:8px">
+                <strong>Parents:</strong> 
+                <div class="muted">${rec.sire ? 'Sire: ' + rec.sire : ''} ${rec.dam ? 'Dam: ' + rec.dam : ''}</div>
+            </div>
+            ${rec.location ? `<div style="margin-bottom:8px"><strong>Location:</strong> ${rec.location}</div>` : ''}
+            ${rec.notes ? `<div><strong>Notes:</strong><div class="muted">${rec.notes}</div></div>` : ''}
         `;
     }
 }
 
 function showAnimalEditor(show, record = null) {
+    console.log('showAnimalEditor called:', show, record); // Debug log
     const editor = q('#animal-editor');
     const form = q('#animal-editor-form');
+    console.log('Editor elements found:', editor, form); // Debug log
     if (!editor || !form) return;
     if (!show) { editor.style.display = 'none'; return; }
     editor.style.display = '';
-    // populate fields
+    
+    // populate all fields
     q('#edit-animal-tag').value = record?.tag || '';
+    q('#edit-animal-name').value = record?.name || '';
     q('#edit-animal-species').value = record?.species || '';
-    q('#edit-animal-dob').value = record?.dob || '';
     q('#edit-animal-sex').value = record?.sex || '';
+    q('#edit-animal-dob').value = record?.dob || '';
+    q('#edit-animal-weight').value = record?.weight || '';
     q('#edit-animal-breed').value = record?.breed || '';
-    q('#edit-animal-parents').value = record && record.parentIds ? record.parentIds.join(', ') : '';
+    q('#edit-animal-sire').value = record?.sire || '';
+    q('#edit-animal-dam').value = record?.dam || '';
+    q('#edit-animal-location').value = record?.location || '';
+    q('#edit-animal-status').value = record?.status || 'active';
     q('#edit-animal-notes').value = record?.notes || '';
 }
 
 async function wireAnimalUI() {
-    // new animal button
-    q('#btn-new-animal')?.addEventListener('click', () => {
+    console.log('Wiring animal UI...'); // Debug log
+    
+    // New animal button
+    const newBtn = q('#btn-new-animal');
+    console.log('New animal button found:', newBtn); // Debug log
+    newBtn?.addEventListener('click', () => {
+        console.log('New animal button clicked'); // Debug log
         _currentAnimalId = null;
         showAnimalEditor(true, {});
-        q('#animal-editor-title').textContent = 'New animal';
+        q('#animal-editor-title').textContent = 'Add New Animal';
     });
 
-    // edit button on detail card
-    q('#animal-edit-btn')?.addEventListener('click', async () => {
-        if (!_currentAnimalId) return alert('Select an animal first');
-        const rec = (await getRecords('animals')).find(r => r.id === _currentAnimalId);
-        if (!rec) return alert('Record not found');
-        showAnimalEditor(true, rec);
-        q('#animal-editor-title').textContent = 'Edit animal';
+    // Clear filters button
+    q('#btn-clear-filters')?.addEventListener('click', clearAnimalFilters);
+
+    // Export animals button
+    q('#btn-export-animals')?.addEventListener('click', async () => {
+        const animals = await getRecords('animals');
+        if (!animals || animals.length === 0) {
+            alert('No animals to export');
+            return;
+        }
+        
+        // Create CSV content
+        const headers = ['Tag/ID', 'Name', 'Species', 'Breed', 'Sex', 'Date of Birth', 'Weight (kg)', 'Status', 'Location', 'Sire', 'Dam', 'Notes'];
+        const csvContent = [
+            headers.join(','),
+            ...animals.map(a => [
+                a.tag || '',
+                a.name || '',
+                a.species || '',
+                a.breed || '',
+                a.sex || '',
+                a.dob || '',
+                a.weight || '',
+                a.status || '',
+                a.location || '',
+                a.sire || '',
+                a.dam || '',
+                (a.notes || '').replace(/,/g, ';') // Replace commas in notes
+            ].map(field => `"${field}"`).join(','))
+        ].join('\n');
+        
+        // Download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `animals_export_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
     });
 
-    // delete
-    q('#animal-delete-btn')?.addEventListener('click', async () => {
-        if (!_currentAnimalId) return alert('Select an animal first');
-        if (!confirm('Delete this animal?')) return;
-        try {
-            await deleteRecord('animals', _currentAnimalId);
-            _currentAnimalId = null;
-            await renderAnimalsList();
-            showAnimalDetail(null);
-        } catch (err) { alert('Delete failed: ' + err); }
-    });
-
-    // duplicate
-    q('#animal-copy-btn')?.addEventListener('click', async () => {
-        if (!_currentAnimalId) return alert('Select an animal first');
-        const rec = (await getRecords('animals')).find(r => r.id === _currentAnimalId);
-        if (!rec) return alert('Record not found');
-        const copy = Object.assign({}, rec); delete copy.id; copy.tag = (copy.tag || '') + '-copy';
-        await saveRecord('animals', copy);
-        await renderAnimalsList();
-    });
-
-    // cancel editor
+    // Cancel editor
     q('#animal-cancel-btn')?.addEventListener('click', () => {
         showAnimalEditor(false);
     });
 
-    // save editor
+    // Save editor
     q('#animal-editor-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const rec = {
             tag: q('#edit-animal-tag').value.trim(),
+            name: q('#edit-animal-name').value.trim(),
             species: q('#edit-animal-species').value.trim(),
-            dob: q('#edit-animal-dob').value || '',
             sex: q('#edit-animal-sex').value || '',
-            breed: q('#edit-animal-breed').value || '',
-            parentIds: q('#edit-animal-parents').value.split(',').map(s=>s.trim()).filter(Boolean),
-            notes: q('#edit-animal-notes').value || ''
+            dob: q('#edit-animal-dob').value || '',
+            weight: parseFloat(q('#edit-animal-weight').value) || null,
+            breed: q('#edit-animal-breed').value.trim(),
+            sire: q('#edit-animal-sire').value.trim(),
+            dam: q('#edit-animal-dam').value.trim(),
+            location: q('#edit-animal-location').value.trim(),
+            status: q('#edit-animal-status').value || 'active',
+            notes: q('#edit-animal-notes').value.trim()
         };
+        
+        if (!rec.tag) return alert('Tag/ID is required');
+        if (!rec.species) return alert('Species is required');
+        
         try {
             if (_currentAnimalId) {
                 await updateRecord('animals', _currentAnimalId, rec);
@@ -416,11 +858,561 @@ async function wireAnimalUI() {
             }
             showAnimalEditor(false);
             await renderAnimalsList();
-            if (_currentAnimalId) await showAnimalDetail(_currentAnimalId);
+            alert('Animal saved successfully!');
+        } catch (err) { 
+            alert('Save failed: ' + err); 
+        }
+    });
+
+    // Search and filter handlers
+    q('#animal-search')?.addEventListener('input', debounce(renderAnimalsList, 300));
+    q('#animal-filter-species')?.addEventListener('change', renderAnimalsList);
+    q('#animal-filter-status')?.addEventListener('change', renderAnimalsList);
+
+    // BREEDING MANAGEMENT
+    wireBreedingUI();
+    
+    // HEALTH MANAGEMENT
+    wireHealthUI();
+    
+    // GENEALOGY MANAGEMENT
+    wireGenealogyUI();
+    
+    // PERFORMANCE MANAGEMENT
+    wirePerformanceUI();
+}
+
+function wireBreedingUI() {
+    // New breeding button
+    q('#btn-new-breeding')?.addEventListener('click', () => {
+        showBreedingEditor(true);
+        q('#breeding-form').reset();
+    });
+
+    // Breeding form submit
+    q('#breeding-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const recordId = form.dataset.recordId;
+        
+        const rec = {
+            female: q('#breeding-female').value.trim(),
+            male: q('#breeding-male').value.trim(),
+            date: q('#breeding-date').value,
+            method: q('#breeding-method').value || 'natural',
+            expectedDue: q('#breeding-expected-due').value || '',
+            status: q('#breeding-status').value || 'bred',
+            offspring: q('#breeding-offspring').value.split(',').map(s => s.trim()).filter(Boolean),
+            notes: q('#breeding-notes').value.trim()
+        };
+        
+        if (!rec.female || !rec.date) return alert('Female ID and breeding date are required');
+        
+        try {
+            if (recordId) {
+                await updateRecord('breeding', recordId, rec);
+            } else {
+                await saveRecord('breeding', rec);
+            }
+            showBreedingEditor(false);
+            delete form.dataset.recordId;
+            await renderBreedingList();
         } catch (err) { alert('Save failed: ' + err); }
+    });
+
+    // Cancel breeding form
+    q('#breeding-cancel')?.addEventListener('click', () => {
+        showBreedingEditor(false);
+    });
+
+    // Breeding list click handlers
+    wireListActions('breeding');
+}
+
+function wireHealthUI() {
+    // New health record button
+    q('#btn-new-health')?.addEventListener('click', () => {
+        showHealthEditor(true);
+        q('#health-form').reset();
+    });
+
+    // Health form submit
+    q('#health-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const recordId = form.dataset.recordId;
+        
+        const rec = {
+            animal: q('#health-animal').value.trim(),
+            date: q('#health-date').value,
+            type: q('#health-type').value,
+            description: q('#health-description').value.trim(),
+            veterinarian: q('#health-veterinarian').value.trim(),
+            cost: parseFloat(q('#health-cost').value) || null,
+            weight: parseFloat(q('#health-weight').value) || null,
+            nextDue: q('#health-next-due').value || '',
+            notes: q('#health-notes').value.trim()
+        };
+        
+        if (!rec.animal || !rec.date || !rec.type || !rec.description) {
+            return alert('Animal ID, date, type, and description are required');
+        }
+        
+        try {
+            if (recordId) {
+                await updateRecord('health', recordId, rec);
+            } else {
+                await saveRecord('health', rec);
+            }
+            showHealthEditor(false);
+            delete form.dataset.recordId;
+            await renderHealthList();
+        } catch (err) { alert('Save failed: ' + err); }
+    });
+
+    // Cancel health form
+    q('#health-cancel')?.addEventListener('click', () => {
+        showHealthEditor(false);
+    });
+
+    // Health search and filter
+    q('#health-search')?.addEventListener('input', debounce(renderHealthList, 300));
+    q('#health-filter-type')?.addEventListener('change', renderHealthList);
+
+    // Health list click handlers
+    wireListActions('health');
+}
+
+function wireGenealogyUI() {
+    // Genealogy animal selection
+    q('#genealogy-animal')?.addEventListener('change', (e) => {
+        const animalId = e.target.value;
+        if (animalId) {
+            renderGenealogyTree(animalId);
+        } else {
+            q('#genealogy-tree').innerHTML = 'Select an animal to view its family tree';
+            q('#genealogy-offspring').innerHTML = 'Select an animal to view offspring';
+        }
     });
 }
 
+function wirePerformanceUI() {
+    // New performance record button
+    q('#btn-new-performance')?.addEventListener('click', () => {
+        showPerformanceEditor(true);
+        q('#performance-form').reset();
+    });
+
+    // Performance form submit
+    q('#performance-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const recordId = form.dataset.recordId;
+        
+        const rec = {
+            animal: q('#performance-animal').value.trim(),
+            date: q('#performance-date').value,
+            type: q('#performance-type').value,
+            value: parseFloat(q('#performance-value').value),
+            unit: q('#performance-unit').value.trim(),
+            notes: q('#performance-notes').value.trim()
+        };
+        
+        if (!rec.animal || !rec.date || !rec.type || isNaN(rec.value)) {
+            return alert('Animal ID, date, type, and value are required');
+        }
+        
+        try {
+            if (recordId) {
+                await updateRecord('performance', recordId, rec);
+            } else {
+                await saveRecord('performance', rec);
+            }
+            showPerformanceEditor(false);
+            delete form.dataset.recordId;
+            await renderPerformanceList();
+        } catch (err) { alert('Save failed: ' + err); }
+    });
+
+    // Cancel performance form
+    q('#performance-cancel')?.addEventListener('click', () => {
+        showPerformanceEditor(false);
+    });
+
+    // Performance search and filter
+    q('#performance-search')?.addEventListener('input', debounce(renderPerformanceList, 300));
+    q('#performance-filter-type')?.addEventListener('change', renderPerformanceList);
+
+    // Performance list click handlers
+    wireListActions('performance');
+}
+
+// Editor display functions
+function showBreedingEditor(show) {
+    const editor = q('#breeding-editor');
+    if (!editor) return;
+    editor.style.display = show ? '' : 'none';
+}
+
+function showHealthEditor(show) {
+    const editor = q('#health-editor');
+    if (!editor) return;
+    editor.style.display = show ? '' : 'none';
+}
+
+function showPerformanceEditor(show) {
+    const editor = q('#performance-editor');
+    if (!editor) return;
+    editor.style.display = show ? '' : 'none';
+}
+
+// BREEDING MANAGEMENT
+async function renderBreedingList() {
+    const listEl = q('#animals-breeding-list');
+    if (!listEl) return;
+    
+    const recs = await getRecords('breeding') || [];
+    if (recs.length === 0) {
+        listEl.innerHTML = `
+            <div class="muted">No breeding records.</div>
+            <button class="btn secondary" onclick="createSampleBreeding()" style="margin-top:8px">Add sample breeding record</button>
+        `;
+        return;
+    }
+    
+    const items = recs.map(r => {
+        const statusBadge = `<span class="record-type type-breeding">${r.status || 'bred'}</span>`;
+        const dueDate = r.expectedDue ? new Date(r.expectedDue).toLocaleDateString() : '';
+        return `
+            <div class="item" data-id="${r.id}">
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                        <strong>${r.female} × ${r.male || 'Unknown'}</strong>
+                        ${statusBadge}
+                    </div>
+                    <div class="muted">
+                        ${new Date(r.date).toLocaleDateString()} • ${r.method || 'natural'}
+                        ${dueDate ? ' • Due: ' + dueDate : ''}
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="btn secondary edit">Edit</button>
+                    <button class="btn secondary delete">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    listEl.innerHTML = items;
+    
+    updateBreedingStats();
+    updatePregnancyCalendar();
+}
+
+async function updateBreedingStats() {
+    const breedingRecs = await getRecords('breeding') || [];
+    const thisYear = new Date().getFullYear();
+    const thisYearBreedings = breedingRecs.filter(r => new Date(r.date).getFullYear() === thisYear);
+    const successful = breedingRecs.filter(r => r.status === 'confirmed' || r.status === 'born');
+    const pregnant = breedingRecs.filter(r => r.status === 'confirmed');
+    
+    const thisMonth = new Date().getMonth();
+    const dueThisMonth = breedingRecs.filter(r => 
+        r.expectedDue && new Date(r.expectedDue).getMonth() === thisMonth
+    );
+    
+    q('#stat-total-breedings').textContent = thisYearBreedings.length;
+    q('#stat-success-rate').textContent = breedingRecs.length > 0 ? 
+        Math.round((successful.length / breedingRecs.length) * 100) + '%' : '0%';
+    q('#stat-pregnant').textContent = pregnant.length;
+    q('#stat-due-month').textContent = dueThisMonth.length;
+}
+
+async function updatePregnancyCalendar() {
+    const calendarEl = q('#pregnancy-calendar');
+    if (!calendarEl) return;
+    
+    const breedingRecs = await getRecords('breeding') || [];
+    const pregnant = breedingRecs.filter(r => r.status === 'confirmed' && r.expectedDue);
+    
+    if (pregnant.length === 0) {
+        calendarEl.innerHTML = 'No current pregnancies';
+        return;
+    }
+    
+    const sorted = pregnant.sort((a, b) => new Date(a.expectedDue) - new Date(b.expectedDue));
+    const items = sorted.map(r => {
+        const dueDate = new Date(r.expectedDue);
+        const today = new Date();
+        const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+        const urgency = daysUntilDue <= 7 ? 'color: #d73527' : daysUntilDue <= 30 ? 'color: #f57c00' : '';
+        
+        return `
+            <div style="padding:8px;border-bottom:1px solid #eee;${urgency}">
+                <strong>${r.female}</strong> - Due: ${dueDate.toLocaleDateString()}
+                <span style="font-size:12px">(${daysUntilDue > 0 ? daysUntilDue + ' days' : 'Overdue'})</span>
+            </div>
+        `;
+    }).join('');
+    
+    calendarEl.innerHTML = items;
+}
+
+// HEALTH MANAGEMENT
+async function renderHealthList() {
+    const listEl = q('#animals-health-list');
+    if (!listEl) return;
+    
+    const recs = await getRecords('health') || [];
+    const searchTerm = q('#health-search')?.value?.toLowerCase() || '';
+    const typeFilter = q('#health-filter-type')?.value || '';
+    
+    let filteredRecs = recs;
+    if (searchTerm) {
+        filteredRecs = filteredRecs.filter(r => 
+            (r.animal || '').toLowerCase().includes(searchTerm)
+        );
+    }
+    if (typeFilter) {
+        filteredRecs = filteredRecs.filter(r => r.type === typeFilter);
+    }
+    
+    if (filteredRecs.length === 0) {
+        listEl.innerHTML = `
+            <div class="muted">No health records found.</div>
+            <button class="btn secondary" onclick="createSampleHealth()" style="margin-top:8px">Add sample health record</button>
+        `;
+        return;
+    }
+    
+    const items = filteredRecs.map(r => {
+        const typeBadge = `<span class="record-type type-${r.type}">${r.type}</span>`;
+        const nextDue = r.nextDue ? new Date(r.nextDue).toLocaleDateString() : '';
+        return `
+            <div class="item" data-id="${r.id}">
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                        <strong>${r.animal}</strong>
+                        ${typeBadge}
+                    </div>
+                    <div class="muted">
+                        ${new Date(r.date).toLocaleDateString()} • ${r.description}
+                        ${r.veterinarian ? ' • Dr. ' + r.veterinarian : ''}
+                    </div>
+                    ${nextDue ? `<div class="muted" style="font-size:12px">Next due: ${nextDue}</div>` : ''}
+                </div>
+                <div class="item-actions">
+                    <button class="btn secondary edit">Edit</button>
+                    <button class="btn secondary delete">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    listEl.innerHTML = items;
+    
+    updateHealthOverview();
+}
+
+async function updateHealthOverview() {
+    const healthRecs = await getRecords('health') || [];
+    const today = new Date();
+    const oneWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const thisMonth = today.getMonth();
+    
+    const needsAttention = healthRecs.filter(r => 
+        r.nextDue && new Date(r.nextDue) <= oneWeek
+    ).length;
+    
+    const vaccinationsDue = healthRecs.filter(r => 
+        r.type === 'vaccination' && r.nextDue && new Date(r.nextDue) <= oneWeek
+    ).length;
+    
+    const thisMonthEvents = healthRecs.filter(r => 
+        new Date(r.date).getMonth() === thisMonth
+    ).length;
+    
+    q('#stat-needs-attention').textContent = needsAttention;
+    q('#stat-vaccinations-due').textContent = vaccinationsDue;
+    q('#stat-health-month').textContent = thisMonthEvents;
+}
+
+// GENEALOGY MANAGEMENT
+async function updateGenealogySelect() {
+    const selectEl = q('#genealogy-animal');
+    if (!selectEl) return;
+    
+    const animals = await getRecords('animals') || [];
+    const options = animals.map(a => 
+        `<option value="${a.id}">${a.tag || a.id} - ${a.species || ''}</option>`
+    ).join('');
+    
+    selectEl.innerHTML = '<option value="">--Select Animal--</option>' + options;
+}
+
+async function renderGenealogyTree(animalId) {
+    const treeEl = q('#genealogy-tree');
+    if (!treeEl || !animalId) return;
+    
+    const animals = await getRecords('animals') || [];
+    const animal = animals.find(a => a.id === animalId);
+    if (!animal) return;
+    
+    const tree = buildFamilyTree(animal, animals, 0);
+    treeEl.innerHTML = `<pre>${tree}</pre>`;
+    
+    updateGenealogyOffspring(animalId);
+    updateGenealogyStats(animalId);
+}
+
+function buildFamilyTree(animal, allAnimals, depth = 0) {
+    const indent = '  '.repeat(depth);
+    let tree = `${indent}${animal.tag || animal.id} (${animal.sex || '?'}) - ${animal.species || ''}\n`;
+    
+    if (depth < 3) { // Limit depth to prevent infinite recursion
+        const sire = animal.sire ? allAnimals.find(a => a.tag === animal.sire || a.id === animal.sire) : null;
+        const dam = animal.dam ? allAnimals.find(a => a.tag === animal.dam || a.id === animal.dam) : null;
+        
+        if (sire) {
+            tree += `${indent}├─ Sire: ${buildFamilyTree(sire, allAnimals, depth + 1)}`;
+        }
+        if (dam) {
+            tree += `${indent}└─ Dam: ${buildFamilyTree(dam, allAnimals, depth + 1)}`;
+        }
+    }
+    
+    return tree;
+}
+
+async function updateGenealogyOffspring(animalId) {
+    const offspringEl = q('#genealogy-offspring');
+    if (!offspringEl || !animalId) return;
+    
+    const animals = await getRecords('animals') || [];
+    const animal = animals.find(a => a.id === animalId);
+    if (!animal) return;
+    
+    const offspring = animals.filter(a => 
+        a.sire === animal.tag || a.sire === animal.id ||
+        a.dam === animal.tag || a.dam === animal.id
+    );
+    
+    if (offspring.length === 0) {
+        offspringEl.innerHTML = '<div class="muted">No offspring recorded</div>';
+        return;
+    }
+    
+    const items = offspring.map(o => `
+        <div style="padding:6px;border-bottom:1px solid #eee">
+            <strong>${o.tag || o.id}</strong> - ${o.species || ''}
+            <div class="muted">${o.dob ? new Date(o.dob).toLocaleDateString() : ''}</div>
+        </div>
+    `).join('');
+    
+    offspringEl.innerHTML = items;
+}
+
+async function updateGenealogyStats(animalId) {
+    if (!animalId) {
+        q('#stat-generation').textContent = '-';
+        q('#stat-total-offspring').textContent = '-';
+        q('#stat-breeding-value').textContent = '-';
+        return;
+    }
+    
+    const animals = await getRecords('animals') || [];
+    const animal = animals.find(a => a.id === animalId);
+    if (!animal) return;
+    
+    // Calculate generation depth
+    const generation = calculateGeneration(animal, animals);
+    
+    // Count offspring
+    const offspring = animals.filter(a => 
+        a.sire === animal.tag || a.sire === animal.id ||
+        a.dam === animal.tag || a.dam === animal.id
+    );
+    
+    // Basic breeding value calculation (simplified)
+    const breedingValue = offspring.length > 0 ? 'Productive' : 'Unproven';
+    
+    q('#stat-generation').textContent = generation;
+    q('#stat-total-offspring').textContent = offspring.length;
+    q('#stat-breeding-value').textContent = breedingValue;
+}
+
+function calculateGeneration(animal, allAnimals, depth = 0) {
+    if (depth > 10) return depth; // Prevent infinite recursion
+    
+    const sire = animal.sire ? allAnimals.find(a => a.tag === animal.sire || a.id === animal.sire) : null;
+    const dam = animal.dam ? allAnimals.find(a => a.tag === animal.dam || a.id === animal.dam) : null;
+    
+    if (!sire && !dam) return depth + 1;
+    
+    const sireGen = sire ? calculateGeneration(sire, allAnimals, depth + 1) : depth + 1;
+    const damGen = dam ? calculateGeneration(dam, allAnimals, depth + 1) : depth + 1;
+    
+    return Math.max(sireGen, damGen);
+}
+
+// PERFORMANCE MANAGEMENT
+async function renderPerformanceList() {
+    const listEl = q('#animals-performance-list');
+    if (!listEl) return;
+    
+    const recs = await getRecords('performance') || [];
+    const searchTerm = q('#performance-search')?.value?.toLowerCase() || '';
+    const typeFilter = q('#performance-filter-type')?.value || '';
+    
+    let filteredRecs = recs;
+    if (searchTerm) {
+        filteredRecs = filteredRecs.filter(r => 
+            (r.animal || '').toLowerCase().includes(searchTerm)
+        );
+    }
+    if (typeFilter) {
+        filteredRecs = filteredRecs.filter(r => r.type === typeFilter);
+    }
+    
+    if (filteredRecs.length === 0) {
+        listEl.innerHTML = '<div class="muted">No performance records found.</div>';
+        return;
+    }
+    
+    const items = filteredRecs.map(r => {
+        const typeBadge = `<span class="record-type type-${r.type}">${r.type}</span>`;
+        return `
+            <div class="item" data-id="${r.id}">
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                        <strong>${r.animal}</strong>
+                        ${typeBadge}
+                    </div>
+                    <div class="muted">
+                        ${new Date(r.date).toLocaleDateString()} • ${r.value} ${r.unit || ''}
+                        ${r.notes ? ' • ' + r.notes : ''}
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="btn secondary edit">Edit</button>
+                    <button class="btn secondary delete">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    listEl.innerHTML = items;
+}
+
+// Utility function for debouncing search
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
 // --- Reporting system: selectable reports, viewer and download (.doc) ---
 const AVAILABLE_REPORTS = [

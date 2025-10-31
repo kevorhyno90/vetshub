@@ -3,14 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="/favicon.ico">
+    <!-- Only load manifest in production (not in GitHub Codespaces) -->
+    <script>
+        if (!window.location.hostname.includes('github.dev') && !window.location.hostname.includes('app.github.dev')) {
+            const link = document.createElement('link');
+            link.rel = 'manifest';
+            link.href = 'manifest.json';
+            document.head.appendChild(link);
+        }
+    </script>
     <link rel="stylesheet" href="src/styles.css">
     <!-- Leaflet CSS (local copy to avoid browser SRI/parse warnings in dev) -->
     <link rel="stylesheet" href="src/leaflet.css" />
     <!-- Load leaflet.draw stylesheet as a normal stylesheet so it's applied before render to avoid FOUC -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" referrerpolicy="no-referrer">
-    <title>PWA Simple App</title>
+    <title>VetsHub - Updated Oct 31 15:45</title>
 </head>
 <body>
 
@@ -386,47 +393,210 @@
         </section>
 
         <section id="animals" class="section">
-            <h2>Animals & Breeding</h2>
+            <h2>Animals & Breeding Management</h2>
             <nav class="subnav">
-                <button data-sub="list" class="active">List</button>
+                <button data-sub="list" class="active">Animals</button>
                 <button data-sub="breeding">Breeding</button>
                 <button data-sub="health">Health</button>
+                <button data-sub="genealogy">Genealogy</button>
+                <button data-sub="performance">Performance</button>
             </nav>
 
+            <!-- Animals List Tab -->
             <div class="sub-section" id="animals-list">
-                <div class="animals-grid" style="display:flex;gap:12px;align-items:flex-start">
-                    <div style="flex:1;min-width:280px">
-                        <div class="card">
-                            <div style="display:flex;justify-content:space-between;align-items:center">
-                                <h4>Animals</h4>
-                                <button id="btn-new-animal" class="btn">New</button>
-                            </div>
-                            <div id="animals-list" class="item-list" style="max-height:540px;overflow:auto">Loading animals...</div>
+                <div class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                        <h4>Farm Animals Registry</h4>
+                        <div style="display:flex;gap:8px">
+                            <button id="btn-new-animal" class="btn">➕ Add Animal</button>
+                            <button id="btn-bulk-import" class="btn secondary">📁 Import</button>
+                            <button id="btn-export-animals" class="btn secondary">📊 Export</button>
                         </div>
                     </div>
+                    
+                    <!-- Filter and Search Controls -->
+                    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+                        <input type="text" id="animal-search" placeholder="🔍 Search by tag, name, or breed..." style="flex:1;min-width:250px" />
+                        <select id="animal-filter-species" style="width:120px">
+                            <option value="">All Species</option>
+                            <option value="cattle">Cattle</option>
+                            <option value="sheep">Sheep</option>
+                            <option value="goat">Goat</option>
+                            <option value="pig">Pig</option>
+                            <option value="chicken">Chicken</option>
+                            <option value="horse">Horse</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <select id="animal-filter-status" style="width:120px">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="pregnant">Pregnant</option>
+                            <option value="lactating">Lactating</option>
+                            <option value="breeding">Breeding</option>
+                            <option value="sick">Sick</option>
+                            <option value="sold">Sold</option>
+                            <option value="deceased">Deceased</option>
+                        </select>
+                        <button id="btn-clear-filters" class="btn secondary" style="white-space:nowrap">Clear Filters</button>
+                    </div>
 
-                    <aside style="width:420px;min-width:320px">
-                        <div id="animal-detail-card" class="card">
-                            <h4 id="animal-detail-title">Select an animal</h4>
-                            <div id="animal-detail" style="margin-bottom:12px">No animal selected.</div>
-                            <div style="display:flex;gap:8px">
-                                <button id="animal-edit-btn" class="btn">Edit</button>
-                                <button id="animal-delete-btn" class="btn secondary">Delete</button>
-                                <button id="animal-copy-btn" class="btn">Duplicate</button>
+                    <!-- Animals Data Table -->
+                    <div id="animals-table-container" style="overflow-x:auto;max-height:600px;border:1px solid #ddd;border-radius:8px">
+                        <table id="animals-table" class="data-table" style="width:100%;min-width:1200px">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px">Tag/ID</th>
+                                    <th style="width:120px">Name</th>
+                                    <th style="width:100px">Species</th>
+                                    <th style="width:120px">Breed</th>
+                                    <th style="width:60px">Sex</th>
+                                    <th style="width:80px">Age</th>
+                                    <th style="width:80px">Weight (kg)</th>
+                                    <th style="width:100px">Status</th>
+                                    <th style="width:120px">Location</th>
+                                    <th style="width:100px">Sire</th>
+                                    <th style="width:100px">Dam</th>
+                                    <th style="width:150px">Notes</th>
+                                    <th style="width:120px">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="animals-table-body">
+                                <tr>
+                                    <td colspan="13" style="text-align:center;padding:20px;color:#666">
+                                        Loading animals...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Animals Statistics -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Animals:</span>
+                            <span class="stat-value" id="total-animals-count">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Active Animals:</span>
+                            <span class="stat-value" id="active-animals-count">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Breeding Animals:</span>
+                            <span class="stat-value" id="breeding-animals-count">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Animals needing attention:</span>
+                            <span class="stat-value" id="attention-animals-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Animal Editor Modal/Panel -->
+                <div id="animal-editor" class="card" style="margin-top:16px;display:none">
+                    <h4 id="animal-editor-title">Animal Details</h4>
+                    <form id="animal-editor-form" class="item-form">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                            <div><label for="edit-animal-tag">Tag / ID *</label><input type="text" id="edit-animal-tag" required /></div>
+                            <div><label for="edit-animal-name">Name</label><input type="text" id="edit-animal-name" /></div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                            <div><label for="edit-animal-species">Species *</label>
+                                <select id="edit-animal-species" required>
+                                    <option value="">--Select--</option>
+                                    <option value="cattle">Cattle</option>
+                                    <option value="sheep">Sheep</option>
+                                    <option value="goat">Goat</option>
+                                    <option value="pig">Pig</option>
+                                    <option value="chicken">Chicken</option>
+                                    <option value="horse">Horse</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div><label for="edit-animal-breed">Breed</label><input type="text" id="edit-animal-breed" /></div>
+                            <div><label for="edit-animal-sex">Sex</label>
+                                <select id="edit-animal-sex">
+                                    <option value="">--</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="unknown">Unknown</option>
+                                </select>
                             </div>
                         </div>
-
-                        <div id="animal-editor" class="card" style="margin-top:12px;display:none">
-                            <h4 id="animal-editor-title">Animal</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                            <div><label for="edit-animal-dob">Date of Birth</label><input type="date" id="edit-animal-dob" /></div>
+                            <div><label for="edit-animal-weight">Weight (kg)</label><input type="number" id="edit-animal-weight" step="0.1" /></div>
+                            <div><label for="edit-animal-status">Status</label>
+                                <select id="edit-animal-status">
+                                    <option value="active">Active</option>
+                                    <option value="pregnant">Pregnant</option>
+                                    <option value="lactating">Lactating</option>
+                                    <option value="breeding">Breeding</option>
+                                    <option value="sick">Sick</option>
+                                    <option value="sold">Sold</option>
+                                    <option value="deceased">Deceased</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                            <div><label for="edit-animal-sire">Sire ID</label><input type="text" id="edit-animal-sire" /></div>
+                            <div><label for="edit-animal-dam">Dam ID</label><input type="text" id="edit-animal-dam" /></div>
+                            <div><label for="edit-animal-location">Location</label><input type="text" id="edit-animal-location" placeholder="Pasture, barn, etc." /></div>
+                        </div>
+                        <div><label for="edit-animal-notes">Notes</label><textarea id="edit-animal-notes" rows="3"></textarea></div>
+                        <div style="display:flex;gap:8px;justify-content:flex-end">
+                            <button type="button" id="animal-cancel-btn" class="btn secondary">Cancel</button>
+                            <button type="submit" id="animal-save-btn" class="btn">💾 Save Animal</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+                            <h4 id="animal-editor-title">Animal Details</h4>
                             <form id="animal-editor-form" class="item-form">
-                                <div class="full"><label for="edit-animal-tag">Tag / ID</label><input type="text" id="edit-animal-tag" required /></div>
-                                <div class="full"><label for="edit-animal-species">Species</label><input type="text" id="edit-animal-species" /></div>
-                                <div class="full"><label for="edit-animal-dob">Date of birth</label><input type="date" id="edit-animal-dob" /></div>
-                                <div class="full"><label for="edit-animal-sex">Sex</label>
-                                    <select id="edit-animal-sex"><option value="">--</option><option>Male</option><option>Female</option><option>Unknown</option></select>
+                                <div class="full"><label for="edit-animal-tag">Tag / ID *</label><input type="text" id="edit-animal-tag" required /></div>
+                                <div class="full"><label for="edit-animal-name">Name</label><input type="text" id="edit-animal-name" /></div>
+                                <div style="display:flex;gap:8px">
+                                    <div style="flex:1"><label for="edit-animal-species">Species *</label>
+                                        <select id="edit-animal-species" required>
+                                            <option value="">--Select--</option>
+                                            <option value="cattle">Cattle</option>
+                                            <option value="sheep">Sheep</option>
+                                            <option value="goat">Goat</option>
+                                            <option value="pig">Pig</option>
+                                            <option value="chicken">Chicken</option>
+                                            <option value="horse">Horse</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div style="flex:1"><label for="edit-animal-sex">Sex</label>
+                                        <select id="edit-animal-sex">
+                                            <option value="">--</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="unknown">Unknown</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:8px">
+                                    <div style="flex:1"><label for="edit-animal-dob">Date of Birth</label><input type="date" id="edit-animal-dob" /></div>
+                                    <div style="flex:1"><label for="edit-animal-weight">Weight (kg)</label><input type="number" id="edit-animal-weight" step="0.1" /></div>
                                 </div>
                                 <div class="full"><label for="edit-animal-breed">Breed</label><input type="text" id="edit-animal-breed" /></div>
-                                <div class="full"><label for="edit-animal-parents">Parent IDs (comma)</label><input type="text" id="edit-animal-parents" /></div>
+                                <div style="display:flex;gap:8px">
+                                    <div style="flex:1"><label for="edit-animal-sire">Sire ID</label><input type="text" id="edit-animal-sire" /></div>
+                                    <div style="flex:1"><label for="edit-animal-dam">Dam ID</label><input type="text" id="edit-animal-dam" /></div>
+                                </div>
+                                <div class="full"><label for="edit-animal-location">Location</label><input type="text" id="edit-animal-location" placeholder="Pasture, barn, etc." /></div>
+                                <div class="full"><label for="edit-animal-status">Status</label>
+                                    <select id="edit-animal-status">
+                                        <option value="active">Active</option>
+                                        <option value="pregnant">Pregnant</option>
+                                        <option value="lactating">Lactating</option>
+                                        <option value="breeding">Breeding</option>
+                                        <option value="sick">Sick</option>
+                                        <option value="sold">Sold</option>
+                                        <option value="deceased">Deceased</option>
+                                    </select>
+                                </div>
                                 <div class="full"><label for="edit-animal-notes">Notes</label><textarea id="edit-animal-notes" rows="3"></textarea></div>
                                 <div style="display:flex;gap:8px">
                                     <button type="submit" id="animal-save-btn" class="btn">Save</button>
@@ -438,14 +608,270 @@
                 </div>
             </div>
 
+            <!-- Breeding Management Tab -->
             <div class="sub-section" id="animals-breeding" style="display:none">
-                <h4>Breeding Schedules</h4>
-                <div id="animals-breeding-list">No schedules.</div>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <div style="flex:1">
+                        <div class="card">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                                <h4>Breeding Records</h4>
+                                <button id="btn-new-breeding" class="btn">New Breeding</button>
+                            </div>
+                            <div id="animals-breeding-list" class="item-list" style="max-height:400px;overflow:auto">No breeding records.</div>
+                        </div>
+                        
+                        <div class="card" style="margin-top:12px">
+                            <h4>Pregnancy Calendar</h4>
+                            <div id="pregnancy-calendar" style="min-height:200px;background:#f9f9f9;border-radius:4px;padding:12px">
+                                Select a pregnant animal to view due dates
+                            </div>
+                        </div>
+                    </div>
+
+                    <aside style="width:380px">
+                        <div id="breeding-editor" class="card" style="display:none">
+                            <h4>Breeding Record</h4>
+                            <form id="breeding-form" class="item-form">
+                                <div class="full"><label for="breeding-female">Female ID *</label><input type="text" id="breeding-female" required /></div>
+                                <div class="full"><label for="breeding-male">Male ID</label><input type="text" id="breeding-male" /></div>
+                                <div class="full"><label for="breeding-date">Breeding Date *</label><input type="date" id="breeding-date" required /></div>
+                                <div class="full"><label for="breeding-method">Method</label>
+                                    <select id="breeding-method">
+                                        <option value="natural">Natural</option>
+                                        <option value="ai">Artificial Insemination</option>
+                                        <option value="embryo">Embryo Transfer</option>
+                                    </select>
+                                </div>
+                                <div class="full"><label for="breeding-expected-due">Expected Due Date</label><input type="date" id="breeding-expected-due" /></div>
+                                <div class="full"><label for="breeding-status">Status</label>
+                                    <select id="breeding-status">
+                                        <option value="bred">Bred</option>
+                                        <option value="confirmed">Pregnancy Confirmed</option>
+                                        <option value="failed">Failed</option>
+                                        <option value="born">Offspring Born</option>
+                                    </select>
+                                </div>
+                                <div class="full"><label for="breeding-offspring">Offspring IDs</label><input type="text" id="breeding-offspring" placeholder="Comma-separated IDs" /></div>
+                                <div class="full"><label for="breeding-notes">Notes</label><textarea id="breeding-notes" rows="3"></textarea></div>
+                                <div style="display:flex;gap:8px">
+                                    <button type="submit" class="btn">Save</button>
+                                    <button type="button" id="breeding-cancel" class="btn secondary">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="card" style="margin-top:12px">
+                            <h4>Breeding Statistics</h4>
+                            <div id="breeding-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Breedings this year:</span>
+                                    <span class="stat-value" id="stat-total-breedings">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Success Rate:</span>
+                                    <span class="stat-value" id="stat-success-rate">0%</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Currently Pregnant:</span>
+                                    <span class="stat-value" id="stat-pregnant">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Due this month:</span>
+                                    <span class="stat-value" id="stat-due-month">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
             </div>
 
+            <!-- Health Management Tab -->
             <div class="sub-section" id="animals-health" style="display:none">
-                <h4>Health Records</h4>
-                <div id="animals-health-list">No health events.</div>
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <div style="flex:1">
+                        <div class="card">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                                <h4>Health Records</h4>
+                                <button id="btn-new-health" class="btn">New Record</button>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-bottom:12px">
+                                <input type="text" id="health-search" placeholder="Search by animal ID..." style="flex:1" />
+                                <select id="health-filter-type" style="width:150px">
+                                    <option value="">All Types</option>
+                                    <option value="vaccination">Vaccination</option>
+                                    <option value="treatment">Treatment</option>
+                                    <option value="checkup">Checkup</option>
+                                    <option value="surgery">Surgery</option>
+                                    <option value="medication">Medication</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div id="animals-health-list" class="item-list" style="max-height:450px;overflow:auto">No health records.</div>
+                        </div>
+                    </div>
+
+                    <aside style="width:380px">
+                        <div id="health-editor" class="card" style="display:none">
+                            <h4>Health Record</h4>
+                            <form id="health-form" class="item-form">
+                                <div class="full"><label for="health-animal">Animal ID *</label><input type="text" id="health-animal" required /></div>
+                                <div class="full"><label for="health-date">Date *</label><input type="date" id="health-date" required /></div>
+                                <div class="full"><label for="health-type">Type *</label>
+                                    <select id="health-type" required>
+                                        <option value="">--Select--</option>
+                                        <option value="vaccination">Vaccination</option>
+                                        <option value="treatment">Treatment</option>
+                                        <option value="checkup">Checkup</option>
+                                        <option value="surgery">Surgery</option>
+                                        <option value="medication">Medication</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="full"><label for="health-description">Description *</label><input type="text" id="health-description" required placeholder="e.g., Annual vaccination, Hoof trimming" /></div>
+                                <div class="full"><label for="health-veterinarian">Veterinarian</label><input type="text" id="health-veterinarian" /></div>
+                                <div style="display:flex;gap:8px">
+                                    <div style="flex:1"><label for="health-cost">Cost</label><input type="number" id="health-cost" step="0.01" /></div>
+                                    <div style="flex:1"><label for="health-weight">Weight (kg)</label><input type="number" id="health-weight" step="0.1" /></div>
+                                </div>
+                                <div class="full"><label for="health-next-due">Next Due Date</label><input type="date" id="health-next-due" /></div>
+                                <div class="full"><label for="health-notes">Notes</label><textarea id="health-notes" rows="3"></textarea></div>
+                                <div style="display:flex;gap:8px">
+                                    <button type="submit" class="btn">Save</button>
+                                    <button type="button" id="health-cancel" class="btn secondary">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="card" style="margin-top:12px">
+                            <h4>Health Overview</h4>
+                            <div id="health-overview">
+                                <div class="stat-item">
+                                    <span class="stat-label">Animals needing attention:</span>
+                                    <span class="stat-value" id="stat-needs-attention">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Vaccinations due:</span>
+                                    <span class="stat-value" id="stat-vaccinations-due">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Health events this month:</span>
+                                    <span class="stat-value" id="stat-health-month">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <!-- Genealogy Tab -->
+            <div class="sub-section" id="animals-genealogy" style="display:none">
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <div style="flex:1">
+                        <div class="card">
+                            <h4>Family Tree</h4>
+                            <div style="margin-bottom:12px">
+                                <label for="genealogy-animal">Select Animal:</label>
+                                <select id="genealogy-animal" style="margin-left:8px;width:200px">
+                                    <option value="">--Select Animal--</option>
+                                </select>
+                            </div>
+                            <div id="genealogy-tree" style="min-height:400px;background:#f9f9f9;border-radius:4px;padding:12px;overflow:auto">
+                                Select an animal to view its family tree
+                            </div>
+                        </div>
+                    </div>
+
+                    <aside style="width:320px">
+                        <div class="card">
+                            <h4>Offspring</h4>
+                            <div id="genealogy-offspring" style="max-height:200px;overflow:auto">
+                                Select an animal to view offspring
+                            </div>
+                        </div>
+
+                        <div class="card" style="margin-top:12px">
+                            <h4>Lineage Summary</h4>
+                            <div id="genealogy-summary">
+                                <div class="stat-item">
+                                    <span class="stat-label">Generation:</span>
+                                    <span class="stat-value" id="stat-generation">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Offspring:</span>
+                                    <span class="stat-value" id="stat-total-offspring">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Breeding Value:</span>
+                                    <span class="stat-value" id="stat-breeding-value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <!-- Performance Tab -->
+            <div class="sub-section" id="animals-performance" style="display:none">
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <div style="flex:1">
+                        <div class="card">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                                <h4>Performance Records</h4>
+                                <button id="btn-new-performance" class="btn">New Record</button>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-bottom:12px">
+                                <input type="text" id="performance-search" placeholder="Search by animal ID..." style="flex:1" />
+                                <select id="performance-filter-type" style="width:150px">
+                                    <option value="">All Types</option>
+                                    <option value="weight">Weight</option>
+                                    <option value="milk">Milk Production</option>
+                                    <option value="wool">Wool Production</option>
+                                    <option value="eggs">Egg Production</option>
+                                    <option value="growth">Growth Rate</option>
+                                    <option value="feed">Feed Conversion</option>
+                                </select>
+                            </div>
+                            <div id="animals-performance-list" class="item-list" style="max-height:450px;overflow:auto">No performance records.</div>
+                        </div>
+                    </div>
+
+                    <aside style="width:380px">
+                        <div id="performance-editor" class="card" style="display:none">
+                            <h4>Performance Record</h4>
+                            <form id="performance-form" class="item-form">
+                                <div class="full"><label for="performance-animal">Animal ID *</label><input type="text" id="performance-animal" required /></div>
+                                <div class="full"><label for="performance-date">Date *</label><input type="date" id="performance-date" required /></div>
+                                <div class="full"><label for="performance-type">Type *</label>
+                                    <select id="performance-type" required>
+                                        <option value="">--Select--</option>
+                                        <option value="weight">Weight</option>
+                                        <option value="milk">Milk Production</option>
+                                        <option value="wool">Wool Production</option>
+                                        <option value="eggs">Egg Production</option>
+                                        <option value="growth">Growth Rate</option>
+                                        <option value="feed">Feed Conversion</option>
+                                    </select>
+                                </div>
+                                <div style="display:flex;gap:8px">
+                                    <div style="flex:1"><label for="performance-value">Value *</label><input type="number" id="performance-value" step="0.01" required /></div>
+                                    <div style="flex:1"><label for="performance-unit">Unit</label><input type="text" id="performance-unit" placeholder="kg, L, etc." /></div>
+                                </div>
+                                <div class="full"><label for="performance-notes">Notes</label><textarea id="performance-notes" rows="2"></textarea></div>
+                                <div style="display:flex;gap:8px">
+                                    <button type="submit" class="btn">Save</button>
+                                    <button type="button" id="performance-cancel" class="btn secondary">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="card" style="margin-top:12px">
+                            <h4>Performance Charts</h4>
+                            <div id="performance-chart" style="min-height:250px;background:#f9f9f9;border-radius:4px;padding:12px">
+                                Select an animal and performance type to view charts
+                            </div>
+                        </div>
+                    </aside>
+                </div>
             </div>
         </section>
 
@@ -573,8 +999,8 @@
     </div> <!-- .layout -->
 
     <!-- Leaflet JS (no SRI to avoid integrity decode errors in dev host) -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="src/leaflet.draw.patched.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
     <script type="module" src="src/main.js"></script>
 
     <!-- Modal editor -->
